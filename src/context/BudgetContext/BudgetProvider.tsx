@@ -2,13 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../AuthContext/useAuth";
 import { BudgetContext } from "./BudgetContext";
 import type { BudgetListItem } from "./BudgetContext";
-import type { PendingInvite } from "../../firebase/budgets";
-import {
-  getPendingInvites,
-  acceptInvite as acceptInviteApi,
-  declineInvite as declineInviteApi,
-  createFirstBudget,
-} from "../../firebase/budgets";
+import { createFirstBudget } from "../../firebase/budgets";
 import { editIsNewUser } from "../../firebase/editData";
 import firestore from "@react-native-firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -26,23 +20,19 @@ export default function BudgetProvider({
     null,
   );
   const [isLoadingBudgets, setIsLoadingBudgets] = useState(true);
-  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
 
   const loadBudgets = useCallback(async (): Promise<BudgetListItem[]> => {
     if (!user) {
       setBudgets([]);
       setActiveBudgetIdState(null);
-      setPendingInvites([]);
       setIsLoadingBudgets(false);
       return [];
     }
     setIsLoadingBudgets(true);
     try {
-      const [invites, budgetSnap] = await Promise.all([
-        getPendingInvites(user),
-        firestore().collection(`users/${user.uid}/budgets`).get(),
-      ]);
-      setPendingInvites(invites);
+      const budgetSnap = await firestore()
+        .collection(`users/${user.uid}/budgets`)
+        .get();
 
       const list: BudgetListItem[] = budgetSnap.docs.map((d) => ({
         id: d.id,
@@ -67,7 +57,6 @@ export default function BudgetProvider({
       console.error("BudgetProvider: failed to load budgets", e);
       setBudgets([]);
       setActiveBudgetIdState(null);
-      setPendingInvites([]);
       return [];
     } finally {
       setIsLoadingBudgets(false);
@@ -99,25 +88,6 @@ export default function BudgetProvider({
     else await AsyncStorage.removeItem(ACTIVE_BUDGET_KEY);
   }, []);
 
-  const acceptInvite = useCallback(
-    async (budgetId: string) => {
-      if (!user) return;
-      await acceptInviteApi(user, budgetId);
-      setPendingInvites((prev) => prev.filter((i) => i.budgetId !== budgetId));
-      setActiveBudgetIdState(budgetId);
-        await AsyncStorage.setItem(ACTIVE_BUDGET_KEY, budgetId);
-      await loadBudgets();
-    },
-    [user, loadBudgets],
-  );
-
-  const declineInvite = useCallback(async (inviteId: string) => {
-    try {
-      await declineInviteApi(inviteId);
-    } finally {
-      setPendingInvites((prev) => prev.filter((i) => i.inviteId !== inviteId));
-    }
-  }, []);
 
   const value = {
     budgets,
@@ -126,9 +96,6 @@ export default function BudgetProvider({
     isLoadingBudgets,
     hasBudgets: budgets.length > 0,
     refetchBudgets: () => loadBudgets().then(() => {}),
-    pendingInvites,
-    acceptInvite,
-    declineInvite,
     handleRemovedFromBudget,
   };
 

@@ -15,7 +15,7 @@ export default {
       backgroundColor: "#ffffff",
     },
     ios: {
-      associatedDomains: ["applinks:invite.nvelopes.com"],
+      associatedDomains: ["applinks:invite.nvelopes.app"],
       supportsTablet: true,
       buildReactNativeFromSource: true,
       bundleIdentifier: "com.ldyer.nvelopes",
@@ -35,7 +35,7 @@ export default {
           data: [
             {
               scheme: "https",
-              host: "invite.nvelopes.com",
+              host: "invite.nvelopes.app",
               pathPrefix: "/invite",
             },
           ],

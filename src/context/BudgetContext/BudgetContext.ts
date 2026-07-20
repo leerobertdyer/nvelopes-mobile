@@ -1,5 +1,4 @@
 import { createContext } from "react";
-import type { PendingInvite } from "../../firebase/budgets";
 
 export interface BudgetListItem {
   id: string;
@@ -15,9 +14,6 @@ export interface BudgetContextValue {
   refetchBudgets: () => Promise<void>;
   /** Call when current budget is no longer accessible (e.g. removed by owner). Refetches and switches to another budget or creates one. */
   handleRemovedFromBudget: () => Promise<void>;
-  pendingInvites: PendingInvite[];
-  acceptInvite: (budgetId: string) => Promise<void>;
-  declineInvite: (inviteId: string) => Promise<void>;
 }
 
 export const BudgetContext = createContext<BudgetContextValue | null>(null);

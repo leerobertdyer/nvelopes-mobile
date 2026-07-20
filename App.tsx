@@ -22,43 +22,32 @@ import {
   createNavigationContainerRef,
 } from "@react-navigation/native";
 import TransactionProvider from "./src/context/TransactionContext/TransactionProvider";
-import * as Linking from 'expo-linking';
-import { useNavigation } from '@react-navigation/native';
+import * as Linking from "expo-linking";
+import AcceptInvite from "./src/screens/AcceptInvites";
 
-export function useDeepLinkInviteHandler() {
-  const navigation = useNavigation();
+const linking = {
+  // Prefixes the app will respond to
+  prefixes: [Linking.createURL("/"), "https://invite.nvelopes.app"],
 
-  useEffect(() => {
-    // 1. Handle app launching from a cold start via link
-    Linking.getInitialURL().then((url) => {
-      if (url) handleUrl(url);
-    });
+  // Map incoming URL paths to your screen names and extract params
+  config: {
+    screens: {
+      // If the URL path is invite/XYZ, it maps to the AcceptInvite screen
+      // and passes XYZ as the 'token' route parameter
+      AcceptInvite: "invite/:token",
 
-    // 2. Handle links incoming while app is alive in background
-    const subscription = Linking.addEventListener('url', (event) => {
-      handleUrl(event.url);
-    });
-
-    return () => subscription.remove();
-  }, []);
-
-  const handleUrl = (url: string) => {
-    const parsed = Linking.parse(url);
-    const path = parsed.path; // e.g., "invite/someTokenABC"
-    
-    if (path && path.startsWith('invite/')) {
-      const token = path.split('/')[1];
-      if (token) {
-        // Direct navigation to your accept screen, passing the token
-        navigation.navigate('AcceptInvite' as never, { token });
-      }
-    }
-  };
-}
+      // Your other screens mapping:
+      Home: "home",
+      Login: "login",
+    },
+  },
+};
 
 export type RootStackParamList = {
   Home: undefined;
   Settings: { showEditMenu?: boolean };
+  Debt: undefined;
+  AcceptInvite: { token: string };
 };
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
@@ -97,6 +86,7 @@ function RootStack() {
       <Stack.Screen name="Home" component={Home} />
       <Stack.Screen name="Settings" component={Settings} />
       <Stack.Screen name="Debt" component={Debt} />
+      <Stack.Screen name="AcceptInvite" component={AcceptInvite} />
     </Stack.Navigator>
   );
 }
@@ -125,7 +115,7 @@ function GlobalLayout() {
         paddingRight: insets.right,
       }}
     >
-      <NavigationContainer ref={navigationRef}>
+      <NavigationContainer ref={navigationRef} linking={linking}>
         <RootStack />
         <Toast config={toastConfig} position="bottom" />
       </NavigationContainer>
