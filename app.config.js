@@ -4,6 +4,7 @@ export default {
   expo: {
     name: "Nvelopes",
     slug: "mobile",
+    scheme: "nvelopes",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./src/assets/icon.png",
