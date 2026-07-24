@@ -1,5 +1,4 @@
-import { Modal } from "react-native";
-import { View } from "react-native-reanimated/lib/typescript/Animated";
+import { Modal, View } from "react-native";
 import { MyText } from "../components/MyText";
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { RootStackParamList } from '../../App';
@@ -13,8 +12,11 @@ export default function AcceptInvite() {
 
   return (
     <Modal>
-      <View className="bg-my-white-light align-center-justify-center h-fit w-full">
-        <MyText>Yay you are in!</MyText>
+      <View className="bg-my-white-light justify-center h-full items-center w-full">
+        <View>
+          <MyText>You've</MyText>
+        </View>
+        <MyText>Yay you are in! {token}</MyText>
       </View>
     </Modal>
   );

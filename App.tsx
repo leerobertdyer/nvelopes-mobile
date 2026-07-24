@@ -34,7 +34,7 @@ const linking = {
     screens: {
       // If the URL path is invite/XYZ, it maps to the AcceptInvite screen
       // and passes XYZ as the 'token' route parameter
-      AcceptInvite: "invite/:token",
+      AcceptInvite: "i/:token",
 
       // Your other screens mapping:
       Home: "home",

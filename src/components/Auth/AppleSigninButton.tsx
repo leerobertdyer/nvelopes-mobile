@@ -29,7 +29,7 @@ export function AppleSignInButton() {
       buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
       buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
       cornerRadius={8}
-      style={{ width: 200, height: 44 }}
+      style={{ width: 340, height: 88 }}
       onPress={handlePress}
     />
   );
