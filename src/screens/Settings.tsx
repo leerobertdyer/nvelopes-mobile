@@ -377,6 +377,13 @@ export default function Settings() {
         });
         return
       }
+    
+      if (!currentUser.email) {
+        Toast.show({
+          type: "error",
+          text1: `No email for ${user.uid}`
+        })
+      }
 
       const ok = await inviteUserToBudget({
         activeBudgetId,
