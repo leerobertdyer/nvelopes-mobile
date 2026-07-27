@@ -819,7 +819,7 @@ export default function Settings() {
       </PageTour>
       <Header links={["Home", "Debt"]} />
       <MyText className="text-3xl font-bold mb-4 text-center pt-8">
-        Settings
+        Settings BRO
       </MyText>
       <View className="w-full flex justify-center items-center gap-4 mb-4">
         <SettingsButton text="Budgets" selected={showBudgets} />
