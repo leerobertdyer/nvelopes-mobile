@@ -53,7 +53,7 @@ export default function LoginForm() {
           const newUser = await createUserEmailPass(email.trim(), password);
           if (newUser) {
             setUser(newUser);
-            Toast.show({ type: "success", text1: "Welcome back" });
+            Toast.show({ type: "success", text1: "Welcome To Nvelopes!" });
           }
         } catch (signupError: unknown) {
           const signupCode = (signupError as LoginError).code;

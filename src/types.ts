@@ -22,6 +22,22 @@ export interface NvelopesTransaction {
     nvelopeOrPaymentId?: string
 }
 
+export type InviteStatus = "pending" | "consumed" | "expired" | "revoked";
+
+export interface Invite {
+  budgetId: string;
+  budgetName: string;
+  invitedByUid: string;
+  invitedByName: string;
+  invitedEmail: string;
+  status: InviteStatus;
+  createdAt: Timestamp;
+  expiresAt: Timestamp;
+  consumedByUid: string | null;
+  consumedAt: Timestamp | null;
+}
+
+
 export interface Payment {
     id: string
     name: string

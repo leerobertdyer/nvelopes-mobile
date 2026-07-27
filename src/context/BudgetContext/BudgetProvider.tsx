@@ -30,8 +30,10 @@ export default function BudgetProvider({
     }
     setIsLoadingBudgets(true);
     try {
+
       const budgetSnap = await firestore()
-        .collection(`users/${user.uid}/budgets`)
+        .collection("budgets")
+        .where("memberIds", "array-contains", user.uid)
         .get();
 
       const list: BudgetListItem[] = budgetSnap.docs.map((d) => ({
@@ -87,7 +89,6 @@ export default function BudgetProvider({
     if (id) await AsyncStorage.setItem(ACTIVE_BUDGET_KEY, id);
     else await AsyncStorage.removeItem(ACTIVE_BUDGET_KEY);
   }, []);
-
 
   const value = {
     budgets,

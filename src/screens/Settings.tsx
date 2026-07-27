@@ -17,14 +17,12 @@ import {
   editIsNewUser,
   editPayDate,
   editPayPeriodInterval,
-  editTotalSpendingBudget,
   getAsyncStorageBackup,
   getSafeBackups,
   restoreFromAsyncStorageBackup,
   restoreFromSafeBackup,
 } from "../firebase/editData";
 import {
-  addInviteToBudget,
   createBudget,
   deleteBudgetAsOwner,
   getBudgetMeta,
@@ -40,14 +38,15 @@ import Btn from "../components/Buttons/Btn";
 import Input from "../components/Input";
 import { MyText } from "../components/MyText";
 import { Picker } from "@react-native-picker/picker";
-import MoneyInput from "../components/Payments/MoneyInput";
 import { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import signout from "../firebase/signOut";
 import Toast from "react-native-toast-message";
 import { navigationRef, RootStackParamList } from "../../App";
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { useRoute, RouteProp } from "@react-navigation/native";
+import { inviteUserToBudget } from "../firebase/invites";
+import Loading from "../components/Loading";
 
-type SettingsRouteProp = RouteProp<RootStackParamList, 'Settings'>;
+type SettingsRouteProp = RouteProp<RootStackParamList, "Settings">;
 
 type User = FirebaseAuthTypes.User;
 const { Timestamp } = firestore;
@@ -62,7 +61,6 @@ export default function Settings() {
   const {
     payPeriodInterval,
     setTotalSpendingBudget,
-    setPayPeriodInterval,
     totalSpendingBudget,
     payDate,
     setPayDate,
@@ -90,6 +88,7 @@ export default function Settings() {
     (BackupData & { id: string }) | null
   >(null);
   const [isLoadingSafeBackups, setIsLoadingSafeBackups] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   // LocalStorage backup (for undo last restore)
   const [asyncStorageBackup, setAsyncStorageBackup] =
@@ -120,7 +119,6 @@ export default function Settings() {
   const [showEditBudgetModal, setShowEditBudgetModal] = useState(false);
   const [showBudgetSelector, setShowBudgetSelector] = useState(false);
   const [budgetMeta, setBudgetMeta] = useState<BudgetMeta | null>(null);
-  
 
   const currentProviderTypes = ["google.com"];
   const isOwner = user && budgetMeta && budgetMeta.ownerId === user.uid;
@@ -216,7 +214,6 @@ export default function Settings() {
       if (!activeBudgetId) return;
       await editPayDate(localDate, activeBudgetId);
       Toast.show({ type: "success", text1: "Pay date updated" });
-
     } catch (e) {
       console.error("Error updating pay date", e);
       Toast.show({ type: "error", text1: "Failed to update pay date" });
@@ -366,42 +363,34 @@ export default function Settings() {
       });
       return;
     }
+    setSharing(true);
     const toEmail = shareEmail.trim();
     const budgetName =
       budgets.find((b) => b.id === activeBudgetId)?.name ?? "Budget";
     try {
-      const ok = await addInviteToBudget(
+      const ok = await inviteUserToBudget({
         activeBudgetId,
+        budgetName,
         toEmail,
-        user.uid,
-        user.email ?? "",
-      );
+        user,
+      });
       if (ok) {
         setShareEmail("");
-        if (SERVER_URL) {
-          try {
-            await fetch(`${SERVER_URL}/nvelopes/invite`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                toEmail: toEmail.toLowerCase(),
-                inviterEmail: user.email ?? "",
-                budgetName,
-              }),
-            });
-          } catch (e) {
-            console.error("Failed to send invite email", { e, SERVER_URL });
-          }
-        }
         Toast.show({
           type: "success",
           text1: `Invite sent to ${toEmail}. They'll receive an email with a link to open or sign up for Nvelopes.`,
         });
       } else {
-        Toast.show({ type: "error", text1: "Failed to send invite" });
+        Toast.show({
+          type: "error",
+          text1: "Failed to send invite: Api Error",
+        });
       }
+    } catch (e) {
+      console.error("Error sending invite: ", e);
     } finally {
       setShowShareBudgetModal(false);
+      setSharing(false);
     }
   }
 
@@ -525,17 +514,17 @@ export default function Settings() {
     }
     return (
       <Pressable
-        className="justify-center h-fit w-[80%] m-auto items-center p-4 bg-my-black-dark rounded-md border-2 border-my-red-dark text-my-white-light my-8"
+        className="justify-center h-fit w-[80%] m-auto items-center p-4 bg-my-black-dark rounded-xl border-2 border-my-red-dark my-8"
         onPress={() => {
           setShowDeleteAccountConfirm(true);
           setDeletePasswordStep(false);
           setDeletePassword("");
         }}
       >
-        <MyText className="text-sm font-bold text-my-red-light">
+        <MyText className="text-sm font-bold text-my-white-dark">
           Delete Account
         </MyText>
-        <MyText className="text-xs text-my-white-dark mt-1">
+        <MyText className="text-xs text-my-white-light mt-1">
           Permanently delete your account and all data
         </MyText>
       </Pressable>
@@ -642,6 +631,8 @@ export default function Settings() {
     );
   }
 
+  if (sharing) return <Loading text="Sharing..." />;
+
   if (isEditingCash) {
     return <EditSpendingBudget handleBack={resetState} />;
   }
@@ -728,14 +719,14 @@ export default function Settings() {
               <MyText className="text-xl text-my-red-light font-bold mb-4">
                 Are you sure?
               </MyText>
-              <MyText className="text-my-white-light mb-2">
+              <MyText className="text-my-white-light mb-2 text-center">
                 This will permanently delete your account and all your data
                 (envelopes, payments, backups).
               </MyText>
-              <MyText className="text-my-red-light text-sm">
+              <MyText className="text-my-red-light text-xl">
                 This cannot be undone.
               </MyText>
-              <MyText className="text-my-white-dark text-sm mt-4">
+              <MyText className="text-my-white-light text-sm mt-4 text-center">
                 To confirm, you may see a Google sign-in window or be asked for
                 your password, depending on how you signed up.
               </MyText>
@@ -852,30 +843,37 @@ export default function Settings() {
               {isOwner &&
                 budgetMeta.memberIds.filter((id) => id !== budgetMeta.ownerId)
                   .length > 0 && (
-                  <View className="w-full max-w-[20rem]  gap-1 bg-my-black-base rounded-md p-2 text-my-white-light">
-                    <MyText className="text-xs text-center">
-                      {budgetMeta.name} Members
-                    </MyText>
-                    <View>
+                  <View className="w-full max-w-[20rem] gap-1 bg-my-white-dark/30 rounded-md text-my-white-light">
+                    <View className="bg-my-black-base rounded-t-md gap-2 py-2">
+                      <MyText className="text-xs text-center text-my-white-dark ">
+                        {budgetMeta.name}
+                      </MyText>
+                      <MyText className="text-xs text-center text-my-white-light">
+                        Members
+                      </MyText>
+                    </View>
+                    <View className="p-4">
                       {budgetMeta.memberIds
                         .filter((id) => id !== budgetMeta.ownerId)
                         .map((mid) => (
-                          <View
+                          <Pressable
                             key={mid}
-                            className="flex flex-row items-center justify-between gap-2 py-1 text-my-white-dark text-sm"
+                            className="flex flex-row items-center justify-center gap-2 py-1 text-my-white-dark text-sm"
+                            onPress={() => {
+                              console.log("WTH: ", mid);
+                              setMemberToRemove(mid);
+                            }}
                           >
-                            <MyText>
+                            <MyText className="text-my-black-dark w-fit">
                               {budgetMeta.memberEmails?.[mid] ??
                                 mid.slice(0, 8) + "…"}
                             </MyText>
-                            <Btn
-                              color="red"
-                              onPress={() => setMemberToRemove(mid)}
-                              text="Remove member"
-                            >
-                              <FontAwesome name="trash" size={18} />
-                            </Btn>
-                          </View>
+                            <FontAwesome
+                              name="trash"
+                              size={18}
+                              color="#ad0241"
+                            />
+                          </Pressable>
                         ))}
                     </View>
                   </View>
@@ -1091,27 +1089,31 @@ export default function Settings() {
             )}
 
             {memberToRemove && (
-              <View className="bg-my-black-dark">
-                <View className="text-center">
-                  <MyText className="text-xl text-my-red-light mb-2">
-                    Remove this member?
-                  </MyText>
-                  <MyText className="text-my-white-light">
-                    They will lose access to this budget.
-                  </MyText>
+              <Modal>
+                <View className="bg-my-black-dark h-full justify-center items-center">
+                  <View className="bg-my-blue-dark h-fit w-full justify-center items-center py-8 gap-4">
+                    <View className="text-center w-full">
+                      <MyText className="text-xl text-my-white-dark mb-2 bg-my-red-dark w-full text-center">
+                        Remove this member?
+                      </MyText>
+                      <MyText className="text-my-white-light text-center">
+                        They will lose access to this budget.
+                      </MyText>
+                    </View>
+                    <Btn
+                      color="gold"
+                      text="Remove member"
+                      disabled={isLeavingBudget}
+                      onPress={handleRemoveMemberConfirm}
+                    />
+                    <Btn
+                      color="red"
+                      text="Cancel"
+                      onPress={() => setMemberToRemove(null)}
+                    />
+                  </View>
                 </View>
-                <Btn
-                  color="red"
-                  text="Remove member"
-                  disabled={isLeavingBudget}
-                  onPress={handleRemoveMemberConfirm}
-                />
-                <Btn
-                  color="red"
-                  text="Cancel"
-                  onPress={() => setMemberToRemove(null)}
-                />
-              </View>
+              </Modal>
             )}
           </>
         )}

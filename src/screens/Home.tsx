@@ -44,7 +44,7 @@ export default function Home() {
 
   if (!user) {
     return (
-      <View className="gap-4 pt-[6rem] items-center w-full h-full bg-my-black-base">
+      <View className="gap-4 pt-[2rem] items-center w-full h-full bg-my-black-base">
         <MyText className="text-2xl text-my-white-dark">Welcome to Nvelopes</MyText>
         <MyText className="text-sm text-my-white-light">
           Old School Budgeting for the Digital Age

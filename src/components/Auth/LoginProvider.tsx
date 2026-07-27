@@ -10,13 +10,13 @@ export default function LoginProvider({
   text: string;
 }) {
   return (
-    <View className="w-full h-fit rounded-xl p-4 bg-my-white-dark">
+    <View className="w-[24rem] h-fit rounded-xl p-[3px] bg-my-white-dark">
       <Pressable onPress={signInWithGoogle}>
-        <View className="w-full h-fit flex-row justify-center items-center gap-6 bg-white p-4 rounded-md">
+        <View className="w-full h-fit flex-row justify-center items-center gap-6 bg-my-white-base p-4 rounded-xl">
           <Image
             source={src}
             alt={text}
-            className="w-[2rem] h-[2rem] object-cover rounded-md"
+            className="w-[4rem] h-[4rem] object-cover rounded-md"
           />
           <MyText>{text}</MyText>
         </View>

@@ -1,5 +1,5 @@
 import * as AppleAuthentication from "expo-apple-authentication";
-import { Platform } from "react-native";
+import { Platform, View } from "react-native";
 import auth from "@react-native-firebase/auth";
 
 export function AppleSignInButton() {
@@ -25,12 +25,14 @@ export function AppleSignInButton() {
   };
 
   return (
-    <AppleAuthentication.AppleAuthenticationButton
-      buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-      buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-      cornerRadius={8}
-      style={{ width: 340, height: 88 }}
-      onPress={handlePress}
-    />
+    <View className="p-[3px] bg-my-white-dark w-[24rem] h-fit rounded-xl">
+      <AppleAuthentication.AppleAuthenticationButton
+        buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+        buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+        cornerRadius={8}
+        style={{ width: 330, height: 88 }}
+        onPress={handlePress}
+      />
+    </View>
   );
 }

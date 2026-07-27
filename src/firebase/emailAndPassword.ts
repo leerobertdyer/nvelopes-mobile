@@ -23,7 +23,7 @@ export async function loginWithEmailAndPassword(email: string, password: string)
   } catch (error: unknown) {
     const errorCode = (error as { code: string }).code;
     const errorMessage = (error as { message: string }).message;
-    console.error('Error signing in:', { errorCode, errorMessage });
+    // expected for new users — the caller falls back to signup, don't spam console.error
     throw error;
   }
 }

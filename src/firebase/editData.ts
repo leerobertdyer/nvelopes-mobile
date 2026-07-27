@@ -1,16 +1,10 @@
-import type {
-  Payment,
-  Nvelope,
-  Interval,
-  NvelopesTransaction,
-} from "../types";
+import type { Payment, Nvelope, Interval, NvelopesTransaction } from "../types";
 import firestore, {
   FirebaseFirestoreTypes,
 } from "@react-native-firebase/firestore";
 import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
-import { MONTHLY } from "../constants";
 import { budgetDataRef } from "./budgets";
-import { cleanPaymentsForFirebase, randomUUID } from "../util/util";
+import { cleanPaymentsForFirebase } from "../util/util";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Timestamp = FirebaseFirestoreTypes.Timestamp;
@@ -18,13 +12,12 @@ type User = FirebaseAuthTypes.User;
 
 export async function addTransaction(t: NvelopesTransaction, budgetId: string) {
   try {
-    
     await firestore()
-    .collection(`budgets/${budgetId}/transactions`)
-    .doc(t.id)
-    .set(t);
+      .collection(`budgets/${budgetId}/transactions`)
+      .doc(t.id)
+      .set(t);
   } catch (error) {
-    console.error("Error adding transaction: ", error)
+    console.error("Error adding transaction: ", error);
   }
 }
 
@@ -37,9 +30,9 @@ export async function editDatabaseWithTransaction<T>({
   budgetId: string;
   func: () => Promise<T>;
 }): Promise<T> {
-  console.log("INSIDE editDatabaseWithTransaction: ", {t, budgetId, func})
+  console.log("INSIDE editDatabaseWithTransaction: ", { t, budgetId, func });
   await addTransaction(t, budgetId);
-return await func();
+  return await func();
 }
 
 export async function createUserProfile(user: {
@@ -149,7 +142,7 @@ export async function editTotalSpendingBudget(
 
 /**
  * FUTURE FEATURE: Analytics & Period Tracking
- * 
+ *
  * TODO: Consider using the newly added transactions for this
  *
  * The previous snapshot-based approach (previousIntervalDetails, resetBudget,
