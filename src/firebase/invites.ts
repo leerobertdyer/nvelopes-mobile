@@ -79,9 +79,9 @@ export async function inviteUserToBudget({
       budgetId: activeBudgetId,
       budgetName,
       invitedByUid: user.uid,
+      invitedEmail: user.email
     }),
   });
-
   if (!response.ok) {
     const text = await response.text();
     console.log("REQUEST FAILED:", response.status, text);
