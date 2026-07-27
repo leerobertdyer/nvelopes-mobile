@@ -24,6 +24,7 @@ import {
 import TransactionProvider from "./src/context/TransactionContext/TransactionProvider";
 import * as Linking from "expo-linking";
 import AcceptInvite from "./src/screens/AcceptInvites";
+import * as Updates from 'expo-updates';
 
 const linking = {
   // Prefixes the app will respond to
@@ -75,6 +76,30 @@ const toastConfig = {
     />
   ),
 };
+
+useEffect(() => {
+
+async function debugCheckUpdate() {
+  console.log('[NVELOPES] isEmbeddedLaunch:', Updates.isEmbeddedLaunch);
+  console.log('[NVELOPES] channel:', Updates.channel);
+  console.log('[NVELOPES] runtimeVersion:', Updates.runtimeVersion);
+  console.log('[NVELOPES] updateId:', Updates.updateId);
+
+  try {
+    const result = await Updates.checkForUpdateAsync();
+    console.log('[NVELOPES] checkForUpdateAsync result:', JSON.stringify(result));
+
+    if (result.isAvailable) {
+      const fetched = await Updates.fetchUpdateAsync();
+      console.log('[NVELOPES] fetchUpdateAsync result:', JSON.stringify(fetched));
+      await Updates.reloadAsync();
+    }
+  } catch (e) {
+    console.log('[NVELOPES] Updates check error:', e);
+  }
+}
+debugCheckUpdate()
+}, [])
 
 SplashScreen.preventAutoHideAsync(); // for fonts
 
