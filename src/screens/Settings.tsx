@@ -383,6 +383,7 @@ export default function Settings() {
           type: "error",
           text1: `No email for ${user.uid}`
         })
+        return
       }
 
       const ok = await inviteUserToBudget({
