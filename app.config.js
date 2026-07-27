@@ -2,14 +2,20 @@ import "dotenv/config";
 
 export default {
   expo: {
+    owner: "leerobertdyers-team",
     name: "Nvelopes",
-    slug: "mobile",
+    slug: "nvelopes",
     scheme: "nvelopes",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./src/assets/icon.png",
     userInterfaceStyle: "light",
     newArchEnabled: true,
+    extra: {
+      eas: {
+        projectId: "6d8f4d0f-205e-484a-abe4-2c14916ed45e",
+      },
+    },
     splash: {
       image: "./src/assets/splash-icon.png",
       resizeMode: "contain",
@@ -53,6 +59,7 @@ export default {
       bundler: "metro",
     },
     plugins: [
+      "./plugins/RNFBfix.js",
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
       "expo-font",
