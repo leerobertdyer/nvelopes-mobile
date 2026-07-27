@@ -45,6 +45,7 @@ import { navigationRef, RootStackParamList } from "../../App";
 import { useRoute, RouteProp } from "@react-navigation/native";
 import { inviteUserToBudget } from "../firebase/invites";
 import Loading from "../components/Loading";
+import { auth } from "../firebase/firebase";
 
 type SettingsRouteProp = RouteProp<RootStackParamList, "Settings">;
 
@@ -368,11 +369,20 @@ export default function Settings() {
     const budgetName =
       budgets.find((b) => b.id === activeBudgetId)?.name ?? "Budget";
     try {
+      const currentUser = auth().currentUser;
+      if (!currentUser) {
+        Toast.show({
+          type: "error",
+          text1: "Failed to send invite: No Current User",
+        });
+        return
+      }
+
       const ok = await inviteUserToBudget({
         activeBudgetId,
         budgetName,
         toEmail,
-        user,
+        user: currentUser,
       });
       if (ok) {
         setShareEmail("");
