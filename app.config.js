@@ -6,18 +6,23 @@ export default {
     name: "Nvelopes",
     slug: "nvelopes",
     scheme: "nvelopes",
-    version: "1.0.0",
+    version: "1.0.1",
     orientation: "portrait",
     icon: "./src/assets/icon.png",
     userInterfaceStyle: "light",
     newArchEnabled: true,
+    build: {
+      production: {
+        channel: "production"
+      }
+    },
     extra: {
       eas: {
         projectId: "6d8f4d0f-205e-484a-abe4-2c14916ed45e",
       },
     },
     runtimeVersion: {
-      policy: "appVersion",
+      policy: "fingerprint",
     },
     updates: {
       url: "https://u.expo.dev/6d8f4d0f-205e-484a-abe4-2c14916ed45e",
