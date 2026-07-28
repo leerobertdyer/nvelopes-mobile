@@ -17,7 +17,7 @@ export default {
       },
     },
     runtimeVersion: {
-      policy: "fingerprint",
+      policy: "appVersion",
     },
     updates: {
       url: "https://u.expo.dev/6d8f4d0f-205e-484a-abe4-2c14916ed45e",
