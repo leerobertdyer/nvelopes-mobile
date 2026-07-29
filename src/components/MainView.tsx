@@ -944,7 +944,7 @@ export default function MainView() {
             <Header links={["Settings", "Debt"]} />
 
             <MyText className="text-lg font-semibold text-my-black-dark mb-2 py-4">
-              "{activeBudgetName}"
+              {activeBudgetName}
             </MyText>
             {!payDate && (
               <Pressable

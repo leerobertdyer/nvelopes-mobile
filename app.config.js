@@ -1,9 +1,11 @@
 import "dotenv/config";
 
+const IS_DEV = process.env.APP_VARIANT === 'development';
+
 export default {
   expo: {
     owner: "leerobertdyers-team",
-    name: "Nvelopes",
+    name: IS_DEV ? "Nvelopes (Dev)" : "Nvelopes",
     slug: "nvelopes",
     scheme: "nvelopes",
     version: "1.0.1",
