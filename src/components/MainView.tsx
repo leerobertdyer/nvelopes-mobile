@@ -933,7 +933,7 @@ export default function MainView() {
           </View>
         </View>
       </PageTour>
-      <View className="w-full text-center items-center flex-1 bg-my-blue-dark">
+      <View className="w-full text-center items-center flex-1 bg-my-white-light">
         {showLoading && <Loading text={loadingText} />}
         <DraxProvider>
           <ScrollView
@@ -943,7 +943,7 @@ export default function MainView() {
           >
             <Header links={["Settings", "Debt"]} />
 
-            <MyText className="text-lg font-semibold text-my-white-dark mb-2 py-4">
+            <MyText className="text-lg font-semibold text-my-black-dark mb-2 py-4">
               "{activeBudgetName}"
             </MyText>
             {!payDate && (

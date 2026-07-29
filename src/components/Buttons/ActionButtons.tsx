@@ -1,7 +1,6 @@
 import type { RefObject } from "react";
 import { Pressable, View } from "react-native";
 import { MyText } from "../MyText";
-import { LinearGradient } from "expo-linear-gradient";
 
 interface ActionButtonsProps {
   onPaymentClick?: () => void;
@@ -34,18 +33,9 @@ export default function ActionButtons({
       <Pressable
         ref={paymentRef}
         onPress={onPaymentClick}
-        style={{
-          shadowColor: "#121212",
-          shadowOffset: { width: 5, height: 4 },
-          shadowOpacity: 0.85,
-          shadowRadius: 6,
-        }}
-        className="bg-my-white-dark rounded-lg p-[1px]"
+        className="bg-white border-2 border-my-white-dark rounded-lg p-[1px]"
       >
-        <LinearGradient
-          colors={[ "#121212", "#ffe0a3", "#121212"]}
-          start={{ x: 1, y: 0 }}
-          end={{ x: 0, y: 1 }}
+        <View
           style={{
             width: 77,
             height: 77,
@@ -58,25 +48,16 @@ export default function ActionButtons({
           <MyText className="text-sm w-full text-center bg-my-white-base text-my-black-dark">
             Payment
           </MyText>
-        </LinearGradient>
+        </View>
       </Pressable>
 
       {/* Cash Button */}
       <Pressable
         ref={cashRef}
         onPress={onCashClick}
-        style={{
-          shadowColor: "#121212",
-          shadowOffset: { width: 5, height: 4 },
-          shadowOpacity: 0.85,
-          shadowRadius: 6,
-        }}
-        className="bg-my-white-dark rounded-lg p-[1px]"
+        className="bg-white border-2 border-my-white-dark rounded-lg p-[1px]"
       >
-        <LinearGradient
-          colors={[ "#121212", "#ffe0a3", "#121212"]}
-          start={{ x: 1, y: 0 }}
-          end={{ x: 0, y: 1 }}
+        <View
           style={{
             width: 77,
             height: 77,
@@ -89,25 +70,16 @@ export default function ActionButtons({
           <MyText className="text-sm w-full text-center bg-my-white-base text-my-black-dark">
             Cash
           </MyText>
-        </LinearGradient>
+        </View>
       </Pressable>
 
       {/* Nvelope Button */}
       <Pressable
         ref={envelopeRef}
         onPress={onEnvelopeClick}
-        style={{
-          shadowColor: "#121212",
-          shadowOffset: { width: 5, height: 4 },
-          shadowOpacity: 0.85,
-          shadowRadius: 6,
-        }}
-        className="bg-my-white-dark rounded-lg p-[1px]"
+        className="bg-white border-2 border-my-white-dark rounded-lg p-[1px]"
       >
-        <LinearGradient
-          colors={[ "#121212", "#ffe0a3", "#121212"]}
-          start={{ x: 1, y: 0 }}
-          end={{ x: 0, y: 1 }}
+        <View
           style={{
             width: 77,
             height: 77,
@@ -120,25 +92,16 @@ export default function ActionButtons({
           <MyText className="text-sm w-full text-center bg-my-white-base text-my-black-dark">
             Nvelope
           </MyText>
-        </LinearGradient>
+        </View>
       </Pressable>
 
       {/* Clear Button */}
       <Pressable
         ref={clearRef}
         onPress={onClearClick}
-        style={{
-          shadowColor: "#121212",
-          shadowOffset: { width: 5, height: 4 },
-          shadowOpacity: 0.85,
-          shadowRadius: 6,
-        }}
-        className="bg-my-white-dark rounded-lg p-[1px]"
+        className="bg-white border-2 border-my-white-dark rounded-lg p-[1px]"
       >
-        <LinearGradient
-          colors={[ "#121212", "#ffe0a3", "#121212"]}
-          start={{ x: 1, y: 0 }}
-          end={{ x: 0, y: 1 }}
+        <View
           style={{
             width: 77,
             height: 77,
@@ -151,7 +114,7 @@ export default function ActionButtons({
           <MyText className="text-sm w-full text-center bg-my-white-base text-my-black-dark">
             Reset
           </MyText>
-        </LinearGradient>
+        </View>
       </Pressable>
     </View>
   );

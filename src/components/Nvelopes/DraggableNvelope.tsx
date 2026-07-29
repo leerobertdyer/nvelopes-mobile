@@ -1,4 +1,4 @@
-import { DraxProvider, DraxView } from "react-native-drax";
+import { DraxView } from "react-native-drax";
 import { View } from "react-native";
 import { Nvelope } from "../../types";
 import NvelopeCard from "./NvelopeCard";
@@ -23,7 +23,6 @@ export default function DraggableNvelope({
   onReorder: (newOrder: Nvelope[]) => void;
   onPress: (n: Nvelope) => void;
 }) {
-  const [isPressed, setIsPressed] = useState(false);
   const [envelopeId, setEnvelopeId] = useState("");
 
   const rotation = useSharedValue(0);
@@ -70,21 +69,19 @@ export default function DraggableNvelope({
   const MOVE_THRESHOLD = 10; // pixels
 
   return (
-    <View className="flex-row flex-wrap bg-my-white-base justify-around p-4">
+    <View className="flex-row flex-wrap bg-my-white-light justify-center">
       {envelopes.map((envelope) => (
         <DraxView
           key={envelope.id}
-          style={[{ padding: 6 }]}
+          style={[{ padding: 10 }]}
           draggable
           longPressDelay={200}
           payload={envelope.id}
           onTouchStart={(e) => {
             const { pageX, pageY } = e.nativeEvent;
             touchStart.current = { x: pageX, y: pageY };
-            setIsPressed(true);
           }}
           onTouchEnd={(e) => {
-            setIsPressed(false);
             if (!touchStart.current) return;
 
             const { pageX, pageY } = e.nativeEvent;

@@ -28,16 +28,10 @@ export default function NvelopeCard({
 
   return (
     <View
-      className={`bg-my-white-light border-2 rounded-md ${borderClass} w-[10rem] items-center justify-center`}
+      className={`bg-white border-2 rounded-md ${borderClass} w-[7rem] items-center justify-center`}
     >
-      <View className="flex-row items-center justify-center gap-6 w-full">
-        <FontAwesome
-          name="envelope"
-          size={40}
-          color={isSpent ? "#ad0241" : isMidSpend ? "#fcca68" : "#076346"}
-          className="p-2"
-        />
-        <View className="">
+      <View className="flex-row items-center justify-between w-full p-2">
+        <View className="items-center w-full">
           <MyText
             className={`text-my-black-dark text-sm font-medium border-b-2 w-full text-center`}
           >
@@ -50,7 +44,7 @@ export default function NvelopeCard({
         </View>
       </View>
       <MyText numberOfLines={1} className={`w-full text-center p-[2px] ${bgClass}`}>
-        "{envelope.name}"
+        {envelope.name}
       </MyText>
     </View>
   );

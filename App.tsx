@@ -132,7 +132,7 @@ function GlobalLayout() {
 
   return (
     <SafeAreaView
-      className="flex-1 bg-my-white-dark"
+      className="flex-1 bg-my-white-light"
       style={{
         paddingTop: insets.top,
         paddingBottom: insets.bottom,

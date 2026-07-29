@@ -54,8 +54,9 @@ function EnvelopeBox({
 
   return (
     <Pressable onPress={setter}>
-      <View className="flex-row p-2 w-full h-[3rem] justify-between items-center bg-my-white-dark text-my-black-dark">
-        <View className="ml-4 flex-1 flex-row gap-4">
+      <View className={`flex-row p-2 w-full h-[3rem] justify-between items-center text-my-black-dark 
+        ${isShown && "border-b-2 "}`}>
+        <View className="flex-1 flex-row gap-4 pl-2">
           <Icon />
           <MyText className="text-start">{name}</MyText>
         </View>
@@ -214,7 +215,7 @@ export default function Nvelopes({
   const envelopesTotalStr = `$${Math.ceil(envelopesTotal).toFixed(2)}`;
 
   return (
-    <View className="justify-center items-center w-full h-fit">
+    <View className="justify-center items-center w-[95%] m-auto h-fit border-black border-2 bg-my-white-base mb-2 rounded-sm">
       <View className="w-full">
         <EnvelopeBox
           isShown={showEnvelopes}

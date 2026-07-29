@@ -47,8 +47,8 @@ export default function PaymentMap({
       <Pressable
         key={p.id}
         onPress={() => handleEditBill(p)}
-        className={`flex-row py-2 border-y-[1px] justify-center items-center border-my-black-dark w-full rounded-sm
-          ${deriveIsPaid(p) ? "bg-my-black-light" : "bg-my-black-base"} ${hidePayments && "rounded-md"}`}
+        className={`flex-row py-2  justify-center items-center border-my-black-dark w-full rounded-sm
+          ${deriveIsPaid(p) ? "bg-my-black-light border-[1px]" : "bg-my-black-base"} ${hidePayments && "rounded-md"}`}
       >
         {hidePayments ? (
           <View className="flex-row w-[50%] m-auto justify-between gap-2">
@@ -144,38 +144,39 @@ export default function PaymentMap({
     name,
     total,
     setter,
-    color,
+    isTransactions,
   }: {
     isShown: boolean;
     setter: () => void;
     total?: string;
     name: string;
-    color?: string;
+    isTransactions?: boolean;
   }) {
     const Icon = () => (
       <Entypo
         name={!isShown ? "chevron-up" : "chevron-down"}
         size={20}
-        color={color === "bg-my-white-light" ? "#121212" : "#fff2d9"}
+        color="#121212"
       />
     );
 
     return (
       <Pressable onPress={setter}>
         <View
-          className={`flex-row items-center justify-between p-2 w-full h-[3rem] 
-            ${color ? color : "bg-my-black-dark text-my-black-dark border-my-black-dark border-b-2"}`}
+          className={`flex-row items-center justify-between p-2 w-[95%] h-[3rem] m-auto rounded-sm border-my-black-dark border-2
+           ${isTransactions ? "bg-white" : "bg-my-white-base"}`}
         >
-          <View className="flex-row flex-1 ml-4 gap-4">
+          <View className={`flex-row flex-1  pl-2
+            ${isTransactions ? "gap-[5rem]" : "gap-4"}`}>
             <Icon />
             <MyText
-              className={`${color === "bg-my-black-base" ? "text-my-white-light" : color ? "text-my-black-dark" : "text-my-white-dark"} `}
+              className="text-my-black-dark"
             >
               {name}
             </MyText>
           </View>
           <MyText
-            className={`${color === "bg-my-black-base" ? "text-my-white-light" : color ? "text-my-black-dark" : "text-my-white-dark"}`}
+            className="text-my-black-dark"
           >
             {total}
           </MyText>
@@ -187,40 +188,43 @@ export default function PaymentMap({
   return (
     <>
       <View className="h-fit w-full">
-        <PaymentBox
-          name="Current Payments"
-          total={currentPaymentsTotal}
-          isShown={showCurrent}
-          setter={() => setShowCurrent(!showCurrent)}
-        />
-        {showCurrent && (
-          <View className="bg-my-black-light p-2 gap-[2px]">
-            {paymentsThisPeriod.map((p) => (
-              <RenderPayment key={p.id} p={p} />
-            ))}
-          </View>
-        )}
-        <PaymentBox
-          name="All Payments"
-          total={allPaymentsTotal}
-          isShown={showAll}
-          setter={() => setShowAll(!showAll)}
-          color="bg-my-black-base"
-        />
-        {showAll && (
-          <View className="p-2 bg-my-black-light gap-[2px]">
-            {payments.map((p) => (
-              <RenderPayment key={p.id} p={p} hidePayments />
-            ))}
-          </View>
-        )}
+        <View className="h-fit w-full mb-2">
+          <PaymentBox
+            name="Current Payments"
+            total={currentPaymentsTotal}
+            isShown={showCurrent}
+            setter={() => setShowCurrent(!showCurrent)}
+          />
+          {showCurrent && (
+            <View className="bg-my-black-dark p-2 gap-[2px] w-[95%] m-auto mb-2">
+              {paymentsThisPeriod.map((p) => (
+                <RenderPayment key={p.id} p={p} />
+              ))}
+            </View>
+          )}
+        </View>
+        <View className="h-fit w-full mb-2">
+          <PaymentBox
+            name="All Payments"
+            total={allPaymentsTotal}
+            isShown={showAll}
+            setter={() => setShowAll(!showAll)}
+          />
+          {showAll && (
+            <View className="p-2 bg-my-black-light gap-[2px] w-[95%] m-auto">
+              {payments.map((p) => (
+                <RenderPayment key={p.id} p={p} hidePayments />
+              ))}
+            </View>
+          )}
+        </View>
         <PaymentBox
           name="View All Transactions"
           isShown={showTransactions}
           setter={() => setShowTransactions(!showTransactions)}
-          color="bg-my-white-light"
+          isTransactions
         />
-        {transactions && showTransactions && (
+        {transactions && showTransactions && transactions.length > 0 && (
           <View className="p-2 bg-my-black-light gap-[2px]">
             {transactions.map((t) => (
               <>
