@@ -79,7 +79,7 @@ export async function inviteUserToBudget({
       budgetId: activeBudgetId,
       budgetName,
       invitedByUid: user.uid,
-      invitedEmail: user.email
+      invitedEmail: toEmail
     }),
   });
   if (!response.ok) {
