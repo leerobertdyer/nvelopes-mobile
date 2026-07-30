@@ -1,30 +1,19 @@
 import React from "react";
 import { View } from "react-native";
 import { Nvelope } from "../../types";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { MyText } from "../MyText";
 
 interface INvelopeCard {
   envelope: Nvelope;
 }
 
-export default function NvelopeCard({
-  envelope,
-}: INvelopeCard) {
-  // 1. Calculate color logic dynamically
+export default function NvelopeCard({ envelope }: INvelopeCard) {
   const isSpent = envelope.spent >= envelope.total;
-  const isMidSpend = envelope.spent >= envelope.total * 0.5;
 
-  const borderClass = isSpent
-    ? "border-my-red-dark"
-    : isMidSpend
-      ? "border-my-black-dark"
-      : "border-my-green-dark";
+  const borderClass = isSpent ? "border-my-red-dark" : "border-my-green-dark";
   const bgClass = isSpent
-    ? "bg-my-red-dark text-my-white-dark"
-    : isMidSpend
-      ? "bg-my-black-dark text-my-white-dark"
-      : "bg-my-green-dark text-my-white-dark";
+    ? "bg-my-red-dark text-my-white-light"
+    : "bg-my-green-dark text-my-white-light";
 
   return (
     <View
@@ -43,7 +32,10 @@ export default function NvelopeCard({
           </MyText>
         </View>
       </View>
-      <MyText numberOfLines={1} className={`w-full text-center p-[2px] ${bgClass}`}>
+      <MyText
+        numberOfLines={1}
+        className={`w-full text-center p-[2px] text-xs ${bgClass}`}
+      >
         {envelope.name}
       </MyText>
     </View>

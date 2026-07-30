@@ -37,35 +37,6 @@ interface NvelopeProps {
   handleAddCashToEnvelope: (envelope: Nvelope) => void;
 }
 
-function EnvelopeBox({
-  name,
-  isShown,
-  total,
-  setter,
-}: {
-  name: string;
-  isShown: boolean;
-  setter: () => void;
-  total: string;
-}) {
-  const Icon = () => (
-    <Entypo name={!isShown ? "chevron-up" : "chevron-down"} size={20} />
-  );
-
-  return (
-    <Pressable onPress={setter}>
-      <View className={`flex-row p-2 w-full h-[3rem] justify-between items-center text-my-black-dark 
-        ${isShown && "border-b-2 "}`}>
-        <View className="flex-1 flex-row gap-4 pl-2">
-          <Icon />
-          <MyText className="text-start">{name}</MyText>
-        </View>
-        <MyText className="text-center">{total}</MyText>
-      </View>
-    </Pressable>
-  );
-}
-
 export default function Nvelopes({
   resetState,
   handleSetupEdit,
@@ -215,14 +186,8 @@ export default function Nvelopes({
   const envelopesTotalStr = `$${Math.ceil(envelopesTotal).toFixed(2)}`;
 
   return (
-    <View className="justify-center items-center w-[95%] m-auto h-fit border-black border-2 bg-my-white-base mb-2 rounded-sm">
+    <View className="justify-center items-center w-full h-fit">
       <View className="w-full">
-        <EnvelopeBox
-          isShown={showEnvelopes}
-          name="Nvelopes"
-          total={envelopesTotalStr}
-          setter={() => setShowEnvelopes(!showEnvelopes)}
-        />
         {showEnvelopes && sortedEnvelopes.length > 0 && (
           <DraggableNvelope
             onReorder={handleReorderNvelopes}

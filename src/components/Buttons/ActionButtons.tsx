@@ -1,6 +1,7 @@
 import type { RefObject } from "react";
 import { Pressable, View } from "react-native";
 import { MyText } from "../MyText";
+import MyIcon, { MyIconType } from "../MyIcon";
 
 interface ActionButtonsProps {
   onPaymentClick?: () => void;
@@ -33,88 +34,48 @@ export default function ActionButtons({
       <Pressable
         ref={paymentRef}
         onPress={onPaymentClick}
-        className="bg-white border-2 border-my-white-dark rounded-lg p-[1px]"
+        className="bg-[#9c6d00] border-2 border-my-black-dark rounded-lg p-[1px] h-[6rem] w-[6rem]"
       >
-        <View
-          style={{
-            width: 77,
-            height: 77,
-            borderRadius: 8,
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <MyText className="text-[3rem]">💸</MyText>
-          <MyText className="text-sm w-full text-center bg-my-white-base text-my-black-dark">
-            Payment
-          </MyText>
+        <View className="flex-1 pt-2 justify-center items-center">
+          <MyIcon type={"PAYMENT"} />
         </View>
+        <MyText className="text-sm w-full text-center text-my-white-light">Payment</MyText>
       </Pressable>
 
       {/* Cash Button */}
       <Pressable
         ref={cashRef}
         onPress={onCashClick}
-        className="bg-white border-2 border-my-white-dark rounded-lg p-[1px]"
+        className="bg-my-green-dark border-2 border-my-black-dark rounded-lg p-[1px] h-[6rem] w-[6rem]"
       >
-        <View
-          style={{
-            width: 77,
-            height: 77,
-            borderRadius: 8,
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <MyText className="text-[3rem]">💰</MyText>
-          <MyText className="text-sm w-full text-center bg-my-white-base text-my-black-dark">
-            Cash
-          </MyText>
+        <View className="flex-1 pt-2 justify-center items-center">
+          <MyIcon type={"CASH"} />
         </View>
+        <MyText className="text-sm w-full text-center text-my-white-light">Cash</MyText>
       </Pressable>
 
       {/* Nvelope Button */}
       <Pressable
         ref={envelopeRef}
         onPress={onEnvelopeClick}
-        className="bg-white border-2 border-my-white-dark rounded-lg p-[1px]"
+        className="bg-my-blue-dark border-2 border-my-black-dark rounded-lg p-[1px] h-[6rem] w-[6rem]"
       >
-        <View
-          style={{
-            width: 77,
-            height: 77,
-            borderRadius: 8,
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <MyText className="text-[3rem]">📨</MyText>
-          <MyText className="text-sm w-full text-center bg-my-white-base text-my-black-dark">
-            Nvelope
-          </MyText>
+        <View className="flex-1 pt-2 justify-center items-center">
+          <MyIcon type={"NVELOPE"} />
         </View>
+        <MyText className="text-sm w-full text-center text-my-white-light">Nvelope</MyText>
       </Pressable>
 
       {/* Clear Button */}
       <Pressable
         ref={clearRef}
         onPress={onClearClick}
-        className="bg-white border-2 border-my-white-dark rounded-lg p-[1px]"
+        className="bg-my-red-dark border-2 border-my-black-dark rounded-lg p-[1px] h-[6rem] w-[6rem]"
       >
-        <View
-          style={{
-            width: 77,
-            height: 77,
-            borderRadius: 8,
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <MyText className="text-[3rem]">♻️</MyText>
-          <MyText className="text-sm w-full text-center bg-my-white-base text-my-black-dark">
-            Reset
-          </MyText>
+        <View className="flex-1 pt-2 justify-center items-center">
+          <MyIcon type={"RESET"} />
         </View>
+        <MyText className="text-sm w-full text-center text-my-white-light">Reset</MyText>
       </Pressable>
     </View>
   );

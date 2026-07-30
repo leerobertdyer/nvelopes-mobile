@@ -56,14 +56,16 @@ export default function BigEnvelope({
 
   if (showTransactions)
     return (
-      <Transactions
-        transactions={transactions}
-        onClose={() => {
-          setShowTransactions(false);
-          handleBack();
-        }}
-        name={envelope.name}
-      />
+      <Modal>
+        <Transactions
+          transactions={transactions}
+          onClose={() => {
+            setShowTransactions(false);
+            handleBack();
+          }}
+          name={envelope.name}
+        />
+      </Modal>
     );
 
   return (

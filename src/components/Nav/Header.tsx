@@ -65,8 +65,7 @@ export default function Header({ links }: { links: string[] }) {
 
   return (
     <>
-      <View className="flex-row  justify-evenly gap-8 w-full">
-
+      <View className="flex-row items-center justify-evenly gap-8 w-screen">
         <MyText
           className={`text-xl rounded-md text-my-white-light py-[.3rem] px-3 font-bold border-2 border-my-white-light
               ${daysTillReset > 3 ? "bg-my-red-dark" : "bg-my-green-dark"}`}

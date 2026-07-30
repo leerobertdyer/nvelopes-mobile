@@ -15,7 +15,7 @@ module.exports = {
         "my-white-light": "#fff2d9",
         "my-white-base": "#ffe0a3",
         "my-white-dark": "#fcca68",
-        "my-red-light": "#f54263",
+        "my-red-light": "#ff8ca1",
         "my-red-base": "#f2055c",
         "my-red-dark": "#ad0241",
         "my-green-light": "#69d1a4",

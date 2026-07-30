@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Interval, type Nvelope, type Payment } from "../types";
+import {
+  Interval,
+  MainViewContent,
+  type Nvelope,
+  type Payment,
+} from "../types";
 import {
   editDatabaseWithTransaction,
   editEnvelopes,
@@ -46,7 +51,8 @@ import {
 } from "../util/paymentUtils";
 import NvelopesContainer from "./Nvelopes/NvelopesContainer";
 import MainEnvelope from "./Nvelopes/MainNvelope";
-import { DraxProvider, DraxScrollView } from "react-native-drax";
+import { DraxProvider } from "react-native-drax";
+import ContentSelector from "./ContentSelector";
 
 export default function MainView() {
   const { user } = useAuth();
@@ -90,6 +96,7 @@ export default function MainView() {
     new Set(),
   );
   const [paidOffDebtName, setPaidOffDebtName] = useState<string | null>(null);
+  const [content, setContent] = useState<MainViewContent>("NVELOPES");
 
   // Only ever show current pay period's payments (derived, never full list)
   const paymentsThisPeriod = useMemo(() => {
@@ -943,9 +950,10 @@ export default function MainView() {
           >
             <Header links={["Settings", "Debt"]} />
 
-            <MyText className="text-lg font-semibold text-my-black-dark mb-2 py-4">
+            <MyText className="text-lg font-semibold text-my-black-dark mb-2 py-6">
               {activeBudgetName}
             </MyText>
+
             {!payDate && (
               <Pressable
                 className="mb-4"
@@ -963,14 +971,8 @@ export default function MainView() {
                 </MyText>
               </Pressable>
             )}
-            <ActionButtons
-              onPaymentClick={handleAddPayment}
-              onCashClick={handleAddCash}
-              onEnvelopeClick={handleSetupNewEnvelope}
-              onClearClick={() => setShowClearNvelopes(true)}
-            />
 
-            <View className="w-full  mt-[1.5rem]">
+            {content === "NVELOPES" ? (
               <NvelopesContainer
                 resetState={resetState}
                 handleSetupEdit={handleSetupEdit}
@@ -979,14 +981,25 @@ export default function MainView() {
                 handleDeleteEnvelope={handleSetupDelete}
                 handleAddCashToEnvelope={handleAddCashToEnvelope}
               />
+            ) : (
               <PaymentMap
                 paymentsThisPeriod={paymentsThisPeriod}
                 handleUpdatePaid={handleUpdatePaid}
                 handleEditBill={handleEditPayment}
               />
-            </View>
+            )}
           </ScrollView>
         </DraxProvider>
+
+        <View className="w-full gap-4 mt-4">
+          <ActionButtons
+            onPaymentClick={handleAddPayment}
+            onCashClick={handleAddCash}
+            onEnvelopeClick={handleSetupNewEnvelope}
+            onClearClick={() => setShowClearNvelopes(true)}
+          />
+          <ContentSelector content={content} setContent={setContent} />
+        </View>
       </View>
       {paidOffDebtName && (
         <CongratsPaidOffModal
