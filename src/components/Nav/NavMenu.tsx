@@ -37,10 +37,15 @@ export default function NavMenu({
           onPress={() => setShowMenu(false)}
         >
           <View
-            className="bg-my-white-dark w-[100%] h-[70%] p-4 justify-center"
+            className="bg-my-white-light w-[100%] h-fit pb-8 justify-start items-end ml-auto"
             onStartShouldSetResponder={() => true} // prevents tap-through closing when tapping menu itself
           >
-            <View className="w-full h-full justify-center">
+            <Pressable onPress={() => setShowMenu(false)}>
+              <MyText className="text-[4rem] pr-[3rem] pt-[8rem] w-fit text-my-red-dark">
+                X
+              </MyText>
+            </Pressable>
+            <View className="w-full mt-8 justify-start">
               <View className="gap-8 h-fit">
                 {links.map((link) => (
                   <Pressable
@@ -50,18 +55,11 @@ export default function NavMenu({
                       setShowMenu(false);
                     }}
                   >
-                    <MyText className="text-5xl text-my-blue-dark text-center underline">
+                    <MyText className="text-4xl text-my-blue-dark text-center underline">
                       {link}
                     </MyText>
                   </Pressable>
                 ))}
-                <View className="mt-8">
-                  <Btn
-                    color="red"
-                    onPress={() => setShowMenu(false)}
-                    text="Close"
-                  />
-                </View>
               </View>
             </View>
           </View>

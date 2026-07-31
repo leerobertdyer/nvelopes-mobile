@@ -1,13 +1,14 @@
 import "dotenv/config";
 
 const IS_DEV = process.env.APP_VARIANT === 'development';
+console.log("IS_DEV:", IS_DEV, "APP_VARIANT:", process.env.APP_VARIANT);
 
 export default {
   expo: {
     owner: "leerobertdyers-team",
     name: IS_DEV ? "Nvelopes (Dev)" : "Nvelopes",
     slug: "nvelopes",
-    scheme: "nvelopes",
+    scheme: IS_DEV ? "nvelopes-dev" : "nvelopes",
     version: "1.0.1",
     orientation: "portrait",
     icon: "./src/assets/icon.png",
@@ -27,12 +28,12 @@ export default {
       associatedDomains: ["applinks:invite.nvelopes.app"],
       supportsTablet: true,
       buildReactNativeFromSource: true,
-      bundleIdentifier: "com.ldyer.nvelopes",
+      bundleIdentifier: IS_DEV ? "com.ldyer.nvelopes.dev" : "com.ldyer.nvelopes",
       googleServicesFile:
         process.env.GOOGLE_SERVICE_INFO_PLIST ?? "./GoogleService-Info.plist",
     },
     android: {
-      package: "com.ldyer.nvelopes",
+      package: IS_DEV ? "com.ldyer.nvelopes.dev" : "com.ldyer.nvelopes",
       adaptiveIcon: {
         foregroundImage: "./src/assets/adaptive-icon.png",
         backgroundColor: "#ffffff",

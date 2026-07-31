@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Interval,
-  MainViewContent,
+  ViewContent,
   type Nvelope,
   type Payment,
 } from "../types";
@@ -96,7 +96,7 @@ export default function MainView() {
     new Set(),
   );
   const [paidOffDebtName, setPaidOffDebtName] = useState<string | null>(null);
-  const [content, setContent] = useState<MainViewContent>("NVELOPES");
+  const [content, setContent] = useState<ViewContent>("NVELOPES");
 
   // Only ever show current pay period's payments (derived, never full list)
   const paymentsThisPeriod = useMemo(() => {

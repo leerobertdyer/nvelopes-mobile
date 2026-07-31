@@ -8,9 +8,11 @@ export interface Nvelope {
   spent: number;
   order?: number;
 }
-export type MainViewContent =
+export type ViewContent =
   | "NVELOPES"
   | "PAYMENTS"
+  | "ACCOUNT"
+  | "BUDGET"
 
   export type NvelopesTransactionType =
   | "DELETE"

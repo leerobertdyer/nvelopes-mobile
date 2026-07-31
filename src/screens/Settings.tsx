@@ -11,7 +11,7 @@ import PageTour from "../components/PageTour";
 import { useAuth } from "../context/AuthContext/useAuth";
 import { useBudget } from "../context/BudgetContext/useBudget";
 import { useDatabase } from "../context/DatabaseContext/useDatabase";
-import { BackupData, Interval } from "../types";
+import { BackupData, Interval, ViewContent } from "../types";
 import {
   AsyncStorageBackup,
   editIsNewUser,
@@ -46,6 +46,7 @@ import { useRoute, RouteProp } from "@react-navigation/native";
 import { inviteUserToBudget } from "../firebase/invites";
 import Loading from "../components/Loading";
 import { auth } from "../firebase/firebase";
+import ContentSelector from "../components/ContentSelector";
 
 type SettingsRouteProp = RouteProp<RootStackParamList, "Settings">;
 
@@ -71,15 +72,12 @@ export default function Settings() {
     setIsNewUser,
   } = useDatabase();
 
-  const [newIntervalBudgetAmount, setNewIntervalBudgetAmount] =
-    useState<string>("");
-  const [newInterval, setNewInterval] = useState<Interval | null>(null);
+  useState<string>("");
   const [isEditingCash, setIsEditingCash] = useState(false);
   const [providerType, setProviderType] = useState("");
   const [hasPassword, setHasPassword] = useState(false);
-  const [showBudgets, setShowBudgets] = useState(false);
-  const [showAccountSettings, setShowAccountSettings] = useState(false);
   const [showShareBudgetModal, setShowShareBudgetModal] = useState(false);
+  const [content, setContent] = useState<ViewContent>("ACCOUNT");
 
   // Safe backups (stored in separate collection - survives user doc corruption)
   const [safeBackups, setSafeBackups] = useState<
@@ -194,15 +192,12 @@ export default function Settings() {
   }, [user]);
 
   function resetState() {
-    setNewIntervalBudgetAmount("");
-    setNewInterval(null);
     setIsEditingCash(false);
   }
 
   async function handleIntervalChange(interval: Interval) {
-    setNewInterval(interval);
     await editPayPeriodInterval(interval, activeBudgetId!);
-    setNewIntervalBudgetAmount(totalSpendingBudget.toString());
+    setInterval(totalSpendingBudget.toString());
   }
 
   async function handlePayDateChange(d: DateData) {
@@ -375,15 +370,15 @@ export default function Settings() {
           type: "error",
           text1: "Failed to send invite: No Current User",
         });
-        return
+        return;
       }
-    
+
       if (!currentUser.email) {
         Toast.show({
           type: "error",
-          text1: `No email for ${user.uid}`
-        })
-        return
+          text1: `No email for ${user.uid}`,
+        });
+        return;
       }
 
       const ok = await inviteUserToBudget({
@@ -480,34 +475,6 @@ export default function Settings() {
   function handleLogOut() {
     signout();
     navigationRef.navigate("Home" as never);
-  }
-
-  function SettingsButton({
-    text,
-    selected,
-  }: {
-    text: string;
-    selected: boolean;
-  }) {
-    return (
-      <Btn
-        selected={selected}
-        color="gold"
-        text={text}
-        onPress={() => {
-          switch (text.toLowerCase()) {
-            case "budgets":
-              setShowAccountSettings(false);
-              setShowBudgets(true);
-              break;
-            case "account":
-              setShowBudgets(false);
-              setShowAccountSettings(true);
-              break;
-          }
-        }}
-      />
-    );
   }
 
   function LogoutButton({
@@ -802,7 +769,7 @@ export default function Settings() {
     );
 
   return (
-    <ScrollView className="w-full h-full bg-my-white-light">
+    <ScrollView className="w-full">
       <PageTour
         visible={isNewUser}
         onDismiss={async () => {
@@ -818,19 +785,17 @@ export default function Settings() {
         </MyText>
       </PageTour>
       <Header links={["Home", "Debt"]} />
+
       <MyText className="text-3xl font-bold mb-4 text-center pt-8">
         Settings
       </MyText>
-      <View className="w-full flex justify-center items-center gap-4 mb-4">
-        <SettingsButton text="Budgets" selected={showBudgets} />
-        <SettingsButton text="Account" selected={showAccountSettings} />
-      </View>
-      {showBudgets && (
+      <ContentSelector content={content} setContent={setContent} />
+      {content === "BUDGET" && (
         <View className="w-full items-center gap-2 mt-4 py-[1rem]">
           {activeBudgetId && !isLoadingBudgetMeta && budgetMeta && (
             <>
               <ScrollView
-                className="w-full gap-2 min-h-[11rem] "
+                className="w-full gap-2 min-h-[11rem]"
                 contentContainerClassName="items-center"
               >
                 <MyText className="text-my-black-light text-xs text-center">
@@ -846,8 +811,6 @@ export default function Settings() {
                       color="red"
                       onPress={() => {
                         setShowEditBudgetModal(true);
-                        // setBudgetNameInput(budgetMeta.name);
-                        // setEditingBudgetName(true);
                       }}
                     />
                   </View>
@@ -861,7 +824,7 @@ export default function Settings() {
               {isOwner &&
                 budgetMeta.memberIds.filter((id) => id !== budgetMeta.ownerId)
                   .length > 0 && (
-                  <View className="w-full max-w-[20rem] gap-1 bg-my-white-dark/30 rounded-md text-my-white-light">
+                  <View className="w-full max-w-[20rem] gap-1 bg-my-white-dark/30 rounded-md">
                     <View className="bg-my-black-base rounded-t-md gap-2 py-2">
                       <MyText className="text-xs text-center text-my-white-dark ">
                         {budgetMeta.name}
@@ -997,10 +960,10 @@ export default function Settings() {
           </View>
         </View>
       )}
-      <View className="overflow-y-scroll   items-center justify-start py-4  bg-my-white-dark mt-[3rem] border-y-4 border-my-black-dark">
+      <View className="items-center justify-start py-4  bg-my-white-dark mt-[3rem] border-y-4 border-my-black-dark">
         <LogoutButton user={user!} onPress={handleLogOut} />
 
-        {showBudgets && (
+        {content === "BUDGET" && (
           <>
             <BackupSelectionScreen />
             <BackupSelectionConfirmScreen />
@@ -1136,7 +1099,7 @@ export default function Settings() {
           </>
         )}
 
-        {user && showAccountSettings && (
+        {user && content === "ACCOUNT" && (
           <View className="w-full mt-4 h-fit">
             {/* If the user doesn't yet have a password and has signed in with one of current provider */}
             {currentProviderTypes.includes(providerType) && !hasPassword && (
