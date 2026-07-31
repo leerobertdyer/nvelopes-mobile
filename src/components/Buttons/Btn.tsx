@@ -8,6 +8,7 @@ export default function Btn({
   color,
   disabled = false,
   selected = false,
+  shadow = false
 }: {
   children?: React.ReactNode;
   text?: string;
@@ -15,6 +16,7 @@ export default function Btn({
   color: string;
   disabled?: boolean;
   selected?: boolean;
+  shadow?: boolean;
 }) {
   const bgColor = () => {
     switch (color.toUpperCase()) {
@@ -40,7 +42,7 @@ export default function Btn({
               ${selected ? "border-2" : ""}`
             }
       onPress={onPress}
-      style={{
+      style={shadow && {
         shadowColor: "#121212",
         shadowOffset: { width: 5, height: 4 },
         shadowOpacity: 0.85,

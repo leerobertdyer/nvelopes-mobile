@@ -1,7 +1,6 @@
 import "dotenv/config";
 
 const IS_DEV = process.env.APP_VARIANT === 'development';
-console.log("IS_DEV:", IS_DEV, "APP_VARIANT:", process.env.APP_VARIANT);
 
 export default {
   expo: {

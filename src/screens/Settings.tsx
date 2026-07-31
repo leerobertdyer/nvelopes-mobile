@@ -485,7 +485,7 @@ export default function Settings() {
     onPress: () => void;
   }) {
     return (
-      <View className="w-full items-center justify-center">
+      <View className="w-full items-center justify-center gap-2">
         <MyText>You are logged in as </MyText>
         <MyText className="text-my-blue-dark">{user?.email}</MyText>
         <Btn text="Log Out" color="red" onPress={onPress} />
@@ -518,7 +518,7 @@ export default function Settings() {
 
   function BackupSelectionScreen() {
     return (
-      <View className="justify-between items-center w-[80%] p-2 bg-my-red-dark rounded-md border-2 border-my-white-dark my-4">
+      <View className="justify-between items-center w-[80%] p-4 bg-my-black-base rounded-md border-2 border-my-white-dark my-4">
         <MyText className="text-sm font-bold text-my-white-light">
           ⚠️ Revert To A Backup
         </MyText>
@@ -794,71 +794,63 @@ export default function Settings() {
         <View className="w-full items-center gap-2 mt-4 py-[1rem]">
           {activeBudgetId && !isLoadingBudgetMeta && budgetMeta && (
             <>
-              <ScrollView
-                className="w-full gap-2 min-h-[11rem]"
-                contentContainerClassName="items-center"
-              >
+              <View className="w-full gap-2 items-center">
                 <MyText className="text-my-black-light text-xs text-center">
                   Budget name
                 </MyText>
+                <MyText className="text-my-black-dark font-medium">
+                  {budgetMeta.name}
+                </MyText>
+                {isOwner &&
+                  budgetMeta.memberIds.filter((id) => id !== budgetMeta.ownerId)
+                    .length > 0 && (
+                    <View className="w-full max-w-[20rem] gap-1 bg-my-white-dark/30 rounded-md mb-2">
+                      <View className="bg-my-black-base rounded-t-md gap-2 py-2">
+                        <MyText className="text-xs text-center text-my-white-light">
+                          Members
+                        </MyText>
+                      </View>
+                      <View className="p-4">
+                        {budgetMeta.memberIds
+                          .filter((id) => id !== budgetMeta.ownerId)
+                          .map((mid) => (
+                            <Pressable
+                              key={mid}
+                              className="flex flex-row items-center justify-center gap-2 py-1 text-my-white-dark text-sm"
+                              onPress={() => {
+                                console.log("WTH: ", mid);
+                                setMemberToRemove(mid);
+                              }}
+                            >
+                              <MyText className="text-my-black-dark w-fit">
+                                {budgetMeta.memberEmails?.[mid] ??
+                                  mid.slice(0, 8) + "…"}
+                              </MyText>
+                              <FontAwesome
+                                name="trash"
+                                size={18}
+                                color="#ad0241"
+                              />
+                            </Pressable>
+                          ))}
+                      </View>
+                    </View>
+                  )}
+
                 {isOwner ? (
-                  <View className="items-center gap-2 w-full">
-                    <MyText className="text-my-black-dark font-medium">
-                      "{budgetMeta.name}"
-                    </MyText>
-                    <Btn
-                      text="Edit Budget"
-                      color="red"
-                      onPress={() => {
-                        setShowEditBudgetModal(true);
-                      }}
-                    />
-                  </View>
+                  <Btn
+                    text="Edit Budget"
+                    color="red"
+                    onPress={() => {
+                      setShowEditBudgetModal(true);
+                    }}
+                  />
                 ) : (
                   <MyText className="text-my-black-dark font-medium">
                     {budgetMeta.name}
                   </MyText>
                 )}
-              </ScrollView>
-
-              {isOwner &&
-                budgetMeta.memberIds.filter((id) => id !== budgetMeta.ownerId)
-                  .length > 0 && (
-                  <View className="w-full max-w-[20rem] gap-1 bg-my-white-dark/30 rounded-md">
-                    <View className="bg-my-black-base rounded-t-md gap-2 py-2">
-                      <MyText className="text-xs text-center text-my-white-dark ">
-                        {budgetMeta.name}
-                      </MyText>
-                      <MyText className="text-xs text-center text-my-white-light">
-                        Members
-                      </MyText>
-                    </View>
-                    <View className="p-4">
-                      {budgetMeta.memberIds
-                        .filter((id) => id !== budgetMeta.ownerId)
-                        .map((mid) => (
-                          <Pressable
-                            key={mid}
-                            className="flex flex-row items-center justify-center gap-2 py-1 text-my-white-dark text-sm"
-                            onPress={() => {
-                              console.log("WTH: ", mid);
-                              setMemberToRemove(mid);
-                            }}
-                          >
-                            <MyText className="text-my-black-dark w-fit">
-                              {budgetMeta.memberEmails?.[mid] ??
-                                mid.slice(0, 8) + "…"}
-                            </MyText>
-                            <FontAwesome
-                              name="trash"
-                              size={18}
-                              color="#ad0241"
-                            />
-                          </Pressable>
-                        ))}
-                    </View>
-                  </View>
-                )}
+              </View>
             </>
           )}
 
@@ -904,11 +896,13 @@ export default function Settings() {
                 />
               )
             )}
-            <Btn
-              text="Create new budget"
-              color="green"
-              onPress={() => setShowCreateBudgetModal(true)}
-            />
+            <View className="mt-2">
+              <Btn
+                text="Create new budget"
+                color="green"
+                onPress={() => setShowCreateBudgetModal(true)}
+              />
+            </View>
             {activeBudgetId && !isLoadingBudgetMeta && budgetMeta && (
               <>
                 {isOwner && (
@@ -960,8 +954,8 @@ export default function Settings() {
           </View>
         </View>
       )}
-      <View className="items-center justify-start py-4  bg-my-white-dark mt-[3rem] border-y-4 border-my-black-dark">
-        <LogoutButton user={user!} onPress={handleLogOut} />
+      <View className="items-center justify-start py-4  bg-my-white-base mt-[3rem] ">
+        {content === "ACCOUNT" && <LogoutButton user={user!} onPress={handleLogOut} />}
 
         {content === "BUDGET" && (
           <>

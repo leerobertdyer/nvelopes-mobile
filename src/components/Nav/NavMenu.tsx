@@ -1,6 +1,6 @@
 import { Modal, Pressable, View } from "react-native";
 import Entypo from "@expo/vector-icons/Entypo";
-import Btn from "../Buttons/Btn";
+import Feather from '@expo/vector-icons/Feather';
 import { MyText } from "../MyText";
 import { navigationRef } from "../../../App";
 
@@ -37,15 +37,10 @@ export default function NavMenu({
           onPress={() => setShowMenu(false)}
         >
           <View
-            className="bg-my-white-light w-[100%] h-fit pb-8 justify-start items-end ml-auto"
+            className="bg-my-white-light w-[100%] h-fit justify-start items-end "
             onStartShouldSetResponder={() => true} // prevents tap-through closing when tapping menu itself
           >
-            <Pressable onPress={() => setShowMenu(false)}>
-              <MyText className="text-[4rem] pr-[3rem] pt-[8rem] w-fit text-my-red-dark">
-                X
-              </MyText>
-            </Pressable>
-            <View className="w-full mt-8 justify-start">
+            <View className="w-full items center mt-[4rem] pt-[2rem] justify-start">
               <View className="gap-8 h-fit">
                 {links.map((link) => (
                   <Pressable
@@ -60,6 +55,17 @@ export default function NavMenu({
                     </MyText>
                   </Pressable>
                 ))}
+
+                <Pressable onPress={() => setShowMenu(false)}>
+                  <View className="w-full bg-my-white-dark/20 h-fit justify-center items-center">
+                    <Feather
+                      name={"chevrons-up"}
+                      size={40}
+                      color="#121212"
+                      className="px-2"
+                    />
+                  </View>
+                </Pressable>
               </View>
             </View>
           </View>
