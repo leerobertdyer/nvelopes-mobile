@@ -467,7 +467,7 @@ export default function MainView() {
     }
   }
 
-  // Edit Envelopes AND budget
+  //Edit Nvelopes AND budget
   async function editEnvelopeAndBudget(n: Nvelope) {
     if (!user) return;
     try {
@@ -792,21 +792,6 @@ export default function MainView() {
           handleBack={resetPaymentState}
         />
       );
-  }
-
-  if (showSpendPage && envelopes.length > 0) {
-    const envelopeSent = envelopeToEdit || emptyEnvelope;
-    return (
-      <>
-        {showLoading && <Loading text={loadingText} />}
-        <MainEnvelope
-          kind="spendingEnvelope"
-          envelope={envelopeSent}
-          editEnvelope={editEnvelope}
-          handleBack={resetState}
-        />
-      </>
-    );
   }
 
   if (isEditingEnvelope && envelopeToEdit) {

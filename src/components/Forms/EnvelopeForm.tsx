@@ -1,6 +1,6 @@
 import type { Nvelope } from "../../types";
 import { randomUUID } from "../../util/util";
-import { View } from "react-native";
+import { ScrollView, View } from "react-native";
 import Input from "../Input";
 import MoneyInput from "../Payments/MoneyInput";
 import { MyText } from "../MyText";
@@ -36,79 +36,84 @@ export default function EnvelopeForm(props: IProps) {
   } = props;
 
   return (
-    <View className="w-full bg-my-blue-dark h-fit items-center justify-center p-4 gap-4 m-auto">
-      <MyText className="text-my-white-dark p-2 text-3xl text-center w-full">
-        {isEditing ? "Edit Envelope" : "Add New Nvelope"}
-      </MyText>
-      <View className="w-full gap-4">
-        <Input
-          id="newEnvelopeName"
-          label="What is your nvelope for?"
-          labelColor="text-my-white-light"
-          placeholder="Envelope name"
-          value={newEnvelopeName ?? ""}
-          onChange={(e) => setNewEnvelopeName(e.toLowerCase())}
-        />
-        {newEnvelopeName && (
-          <>
-            <MoneyInput
-              id="newTotal"
-              label="How much do you want to add?"
-              labelColor="text-my-white-light"
-              placeholder="Envelope Amount"
-              value={newEnvelopeTotal}
-              onChange={setNewEnvelopeTotal}
-            />
-            {setNewEnvelopeSpent != null && (
+    <ScrollView
+      className="w-full h-full"
+      contentContainerClassName="items-center justify-center min-h-full"
+    >
+      <View className="w-full bg-my-blue-dark h-fit items-center justify-center p-4 gap-4 m-auto">
+        <MyText className="text-my-white-dark p-2 text-3xl text-center w-full">
+          {isEditing ? "Edit Nvelope" : "Add New Nvelope"}
+        </MyText>
+        <View className="w-full gap-4">
+          <Input
+            id="newEnvelopeName"
+            label="What is your nvelope for?"
+            labelColor="text-my-white-light"
+            placeholder="Envelope name"
+            value={newEnvelopeName ?? ""}
+            onChange={(e) => setNewEnvelopeName(e.toLowerCase())}
+          />
+          {newEnvelopeName && (
+            <>
               <MoneyInput
-                id="newSpent"
-                label="How much is already spent?"
-                labelColor="black"
-                placeholder="Spent"
-                value={newEnvelopeSpent ?? 0}
-                onChange={(n) => setNewEnvelopeSpent(n)}
+                id="newTotal"
+                label="How much do you want to add?"
+                labelColor="text-my-white-light"
+                placeholder="Envelope Amount"
+                value={newEnvelopeTotal}
+                onChange={setNewEnvelopeTotal}
               />
-            )}
-          </>
-        )}
-        {newEnvelopeName && newEnvelopeTotal > 0 && (
-          <Btn
-            onPress={
-              isEditing && envelope
-                ? () => {
-                    editEnvelope?.(
-                      {
-                        id: envelope!.id,
+              {setNewEnvelopeSpent != null && (
+                <MoneyInput
+                  id="newSpent"
+                  label="How much is already spent?"
+                  labelColor="black"
+                  placeholder="Spent"
+                  value={newEnvelopeSpent ?? 0}
+                  onChange={(n) => setNewEnvelopeSpent(n)}
+                />
+              )}
+            </>
+          )}
+          {newEnvelopeName && newEnvelopeTotal > 0 && (
+            <Btn
+              onPress={
+                isEditing && envelope
+                  ? () => {
+                      editEnvelope?.(
+                        {
+                          id: envelope!.id,
+                          name: newEnvelopeName,
+                          total: newEnvelopeTotal,
+                          spent: newEnvelopeSpent ?? envelope.spent,
+                          order: envelope.order || 1000,
+                        },
+                        false,
+                      );
+                    }
+                  : () => {
+                      handleSaveEnvelope?.({
+                        id: randomUUID(),
                         name: newEnvelopeName,
                         total: newEnvelopeTotal,
-                        spent: newEnvelopeSpent ?? envelope.spent,
-                        order: envelope.order || 1000,
-                      },
-                      false,
-                    );
-                  }
-                : () => {
-                    handleSaveEnvelope?.({
-                      id: randomUUID(),
-                      name: newEnvelopeName,
-                      total: newEnvelopeTotal,
-                      spent: 0,
-                      order: 0,
-                    });
-                  }
-            }
-            color="green"
-            text="Save"
+                        spent: 0,
+                        order: 0,
+                      });
+                    }
+              }
+              color="green"
+              text="Save"
+            />
+          )}
+          <Btn
+            onPress={() => {
+              handleBack?.();
+            }}
+            color="red"
+            text="Back"
           />
-        )}
-        <Btn
-          onPress={() => {
-            handleBack?.();
-          }}
-          color="red"
-          text="Back"
-        />
+        </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }

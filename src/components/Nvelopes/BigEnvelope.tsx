@@ -6,13 +6,21 @@ import { Nvelope, NvelopesTransaction } from "../../types";
 import EvilIcons from "@expo/vector-icons/EvilIcons";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { MyText } from "../MyText";
-import SpendBtn from "../Buttons/SpendBtn";
-import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useState } from "react";
 import { useBudget } from "../../context/BudgetContext/useBudget";
 import { getTransactions } from "../../firebase/budgets";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import Transactions from "../Transactions/Transactions";
+import MoneyInput from "../Payments/MoneyInput";
+import { createTransactionId } from "../../util/util";
+import {
+  editDatabaseWithTransaction,
+  editEnvelopes,
+} from "../../firebase/editData";
+import { useAuth } from "../../context/AuthContext/useAuth";
+import firestore from "@react-native-firebase/firestore";
+import { useDatabase } from "../../context/DatabaseContext/useDatabase";
+import Toast from "react-native-toast-message";
 
 interface IBigEnvelope {
   handleBack: () => void;
@@ -28,16 +36,19 @@ interface IBigEnvelope {
 export default function BigEnvelope({
   handleBack,
   envelope,
-  handleSetShowSpendingPage,
   handleSetupEdit,
   setUpShowGiveAndTake,
   handleDeleteEnvelope,
   handleAddCashToEnvelope,
 }: IBigEnvelope) {
   const { activeBudgetId } = useBudget();
+  const { envelopes, setEnvelopes } = useDatabase();
+
+  const { user } = useAuth();
 
   const [transactions, setTransactions] = useState<NvelopesTransaction[]>([]);
   const [showTransactions, setShowTransactions] = useState(false);
+  const [amount, setAmount] = useState(0);
 
   useEffect(() => {
     async function getEnvelopeTransactions() {
@@ -50,9 +61,53 @@ export default function BigEnvelope({
     getEnvelopeTransactions();
   }, [activeBudgetId, envelope.id]);
 
-  const envelopeRemainder = (
+  const envelopeRemainderStr = (
     Number(envelope.total) - Number(envelope.spent)
   ).toFixed(2);
+
+  const envelopeRemainder = envelope.total - envelope.spent;
+
+  async function handleSpend(spendAll?: boolean) {
+    const amountToSpend = spendAll ? envelopeRemainder : amount;
+    if ((!spendAll && amount <= 0) || !user) return;
+
+    if (envelope.spent + amountToSpend > envelope.total) {
+      Toast.show({
+        type: "error",
+        text1: "You don't have the funds. Add Money From Budget below",
+      });
+      return;
+    }
+
+    const newEnvelopes = envelopes.map((n) =>
+      n.id === envelope.id ? { ...n, spent: n.spent + amountToSpend } : n,
+    );
+    const spendDesc = `${user.email} spent $${amountToSpend} from ${envelope.name}`;
+    setEnvelopes(newEnvelopes);
+    try {
+      await editDatabaseWithTransaction({
+        t: {
+          id: createTransactionId(user),
+          type: "SPEND",
+          description: spendDesc,
+          nvelopeOrPaymentId: envelope.id,
+          amount: spendAll ? envelopeRemainder : amount,
+          createdAt: firestore.Timestamp.now(),
+          createdBy: user.email ?? user.uid,
+        },
+        budgetId: activeBudgetId!,
+        func: () => editEnvelopes(newEnvelopes, activeBudgetId!),
+      });
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Failed to save spend, please try again",
+      });
+      setEnvelopes(envelopes); // roll back optimistic update
+    }
+
+    handleBack?.();
+  }
 
   if (showTransactions)
     return (
@@ -70,27 +125,34 @@ export default function BigEnvelope({
 
   return (
     <Modal>
-      <LinearGradient
-        colors={["#0edbed", "#fcca68", "#076346"]}
-        start={{ x: 1, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={{
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+      <View className="bg-my-white-base">
         <View className="h-full w-full">
           <View className="w-full h-fit m-auto items-center justify-start gap-4">
-            <View className="w-[24rem] items-center justify-center gap-2 bg-my-green-dark/30 p-8 rounded-[24px]">
+            <View className="w-[24rem] items-center justify-center gap-2 bg-my-black-dark/60 p-8 rounded-[24px]">
               <MyText className="text-my-white-dark text-center text-3xl">
                 "{envelope.name}"
               </MyText>
               <MyText className="text-my-white-light text-center ">
-                ${envelopeRemainder}
+                ${envelopeRemainderStr}
               </MyText>
-              <SpendBtn onPress={() => handleSetShowSpendingPage(envelope)} />
+              <MoneyInput value={amount} onChange={(n) => setAmount(n)} />
+              <Btn
+                text={`Spend $${amount.toFixed(2)}`}
+                disabled={amount <= 0}
+                w="w-full"
+                color="green"
+                onPress={() => handleSpend(false)}
+              />
+              <Btn
+                text="Spend All"
+                w="w-full"
+                color="gold"
+                onPress={() => handleSpend(true)}
+              />
             </View>
+
             <Btn onPress={handleBack} color="red" text="Go Back" />
+
             <View className="justify-center items-center gap-2 w-full ">
               <Pressable
                 className="border-2 rounded-md p-2 bg-my-green-dark w-[18rem]"
@@ -134,7 +196,7 @@ export default function BigEnvelope({
               >
                 <View className="flex-row items-center h-10 w-full gap-4 p-[3px] border-2 rounded-md bg-my-white-base text-black border-my-black-dark">
                   <FontAwesome name="pencil-square-o" size={20} />
-                  <MyText>Manually Edit Envelope</MyText>
+                  <MyText>Manually Edit Nvelope</MyText>
                 </View>
               </Pressable>
               <Pressable
@@ -171,7 +233,7 @@ export default function BigEnvelope({
             </View>
           </View>
         </View>
-      </LinearGradient>
+      </View>
     </Modal>
   );
 }

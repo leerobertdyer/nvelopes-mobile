@@ -7,7 +7,6 @@ import BudgetSettingsFields, {
 import CreateLoginWithEmail from "../components/Forms/CreateLoginWithEmail";
 import { format } from "date-fns";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import PageTour from "../components/PageTour";
 import { useAuth } from "../context/AuthContext/useAuth";
 import { useBudget } from "../context/BudgetContext/useBudget";
 import { useDatabase } from "../context/DatabaseContext/useDatabase";
@@ -770,20 +769,6 @@ export default function Settings() {
 
   return (
     <ScrollView className="w-full">
-      <PageTour
-        visible={isNewUser}
-        onDismiss={async () => {
-          if (activeBudgetId) {
-            await editIsNewUser(false, activeBudgetId);
-            setIsNewUser(false);
-          }
-        }}
-      >
-        <MyText className="text-my-white-light">
-          Set pay date and budget interval here when you want to adjust. You can
-          also manage budgets, backups, and account options.
-        </MyText>
-      </PageTour>
       <Header links={["Home", "Debt"]} />
 
       <MyText className="text-3xl font-bold mb-4 text-center pt-8">

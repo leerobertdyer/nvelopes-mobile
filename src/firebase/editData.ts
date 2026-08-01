@@ -30,7 +30,6 @@ export async function editDatabaseWithTransaction<T>({
   budgetId: string;
   func: () => Promise<T>;
 }): Promise<T> {
-  console.log("INSIDE editDatabaseWithTransaction: ", { t, budgetId, func });
   await addTransaction(t, budgetId);
   return await func();
 }

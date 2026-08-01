@@ -16,24 +16,27 @@ export default function CreateLoginWithEmail({
 
   async function handleSignUp() {
     if (!email.trim() || !password) {
-      Toast.show({type: "error", text1: "Please enter email and password"});
+      Toast.show({ type: "error", text1: "Please enter email and password" });
       return;
     }
     try {
       await createLoginForExistingUser(email.trim(), password);
-      Toast.show({type: "error", text1: "Email/password added. You can sign in with it next time."});
+      Toast.show({
+        type: "error",
+        text1: "Email/password added. You can sign in with it next time.",
+      });
       onDone();
     } catch (err: unknown) {
       const message =
         err instanceof Error
           ? err.message
           : "Could not add email/password. Try again.";
-      Toast.show({type: "error", text1: message});
+      Toast.show({ type: "error", text1: message });
     }
   }
 
   return (
-    <View className="bg-white w-full items-center py-6">
+    <View className="bg-my-white-base w-full items-center py-6">
       <MyText className="text-lg mb-4 text-my-red-dark">
         Add Email & Password Login
       </MyText>
