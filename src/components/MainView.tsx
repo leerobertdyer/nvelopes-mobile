@@ -1,14 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  Interval,
-  ViewContent,
-  type Nvelope,
-  type Payment,
-} from "../types";
+import { Interval, ViewContent, type Nvelope, type Payment } from "../types";
 import {
   editDatabaseWithTransaction,
   editEnvelopes,
-  editIsNewUser,
   editPayments,
   editSnowballTargetPaymentId,
   editTotalSpendingBudget,
@@ -30,7 +24,6 @@ import { useDatabase } from "../context/DatabaseContext/useDatabase";
 import { useAuth } from "../context/AuthContext/useAuth";
 import { useBudget } from "../context/BudgetContext/useBudget";
 import { Button, Pressable, ScrollView, Text, View } from "react-native";
-import PageTour from "./PageTour";
 import SplitPaymentDueModal from "./Payments/SplitPaymentDueModal";
 import CongratsPaidOffModal from "./Payments/CongratsPaidOffModal";
 import BigPayment from "./Payments/BigPayment";
@@ -64,8 +57,6 @@ export default function MainView() {
     setTotalSpendingBudget,
     envelopes,
     setEnvelopes,
-    isNewUser,
-    setIsNewUser,
     payDate,
     payPeriodInterval,
     snowballTargetPaymentId,
@@ -683,7 +674,7 @@ export default function MainView() {
 
   if (showClearEnvelopes)
     return (
-      <View className="justify-center items-center bg-my-blue-dark h-full">
+      <View className="justify-center items-center bg-my-blue-dark h-fit w-full m-auto p-6">
         <View className="items-center w-fit mx-auto bg-my-black-dark/60 p-4 rounded-md">
           <MyText className="text-my-white-light text-xl m-2">
             Reset <MyText className="text-my-blue-light">Nvelope</MyText>{" "}
@@ -894,52 +885,6 @@ export default function MainView() {
 
   return (
     <>
-      <PageTour
-        visible={isNewUser}
-        onDismiss={async () => {
-          if (activeBudgetId) {
-            await editIsNewUser(false, activeBudgetId);
-            setIsNewUser(false);
-          }
-        }}
-      >
-        <View className="items-start gap-2">
-          <MyText className="text-my-white-light mb-2 text-center w-full">
-            This is your current budget.
-          </MyText>
-          <MyText className="text-my-white-light">
-            <MyText className="text-my-red-light">Payment</MyText> - Bills/Debts
-          </MyText>
-          <MyText className="text-my-white-light">
-            <MyText className="text-my-green-light">Cash</MyText> - Additional
-            Income
-          </MyText>
-          <MyText className="text-my-white-light">
-            <MyText className="text-my-blue-light">Nvelope</MyText> - Create
-            Spending Categories
-          </MyText>
-          <MyText className="text-my-white-light">
-            <MyText className="text-my-white-dark">Clear</MyText> - Clear All
-            Envelopes | Mark all payments unpaid
-          </MyText>
-          <View>
-            <MyText className="text-my-white-light p-2">
-              Top Left:{" "}
-              <MyText className="text-my-green-base">Days left </MyText>till
-              next pay date.
-            </MyText>
-            <MyText className="text-my-white-light p-2">
-              Top Center:{" "}
-              <MyText className="text-my-red-light">Current balance.</MyText>{" "}
-              Tap to edit.
-            </MyText>
-            <MyText className="text-my-white-light">
-              {" "}
-              You can also adjust your pay date and budget interval in Settings.
-            </MyText>
-          </View>
-        </View>
-      </PageTour>
       <View className="w-full text-center items-center flex-1 bg-my-white-light">
         {showLoading && <Loading text={loadingText} />}
         <DraxProvider>

@@ -217,13 +217,12 @@ export default function BigPayment({
         </View>
         {showExtraPaymentForm && p?.type === "DEBT" && (p.total ?? 0) > 0 && (
           <Modal>
-            <View className="w-full h-full bg-my-blue-dark">
-              <View className="w-full h-fit m-auto bg-my-white-dark p-4">
+            <View className="w-full h-fit bg-my-blue-dark m-auto p-4">
                 <View className="items-center justify-center gap-2 w-full">
-                  <MyText className="text-sm font-medium mb-1">
+                  <MyText className="text-2xl font-medium mb-1 text-my-white-light">
                     Extra Payment
                   </MyText>
-                  <MyText className="text-xs text-my-black-dark mb-2">
+                  <MyText className="text-lg text-my-white-light mb-2">
                     Remaining: ${(p.total ?? 0).toFixed(2)}
                   </MyText>
                   <Btn color="gold" onPress={handlePayAll} text="Pay All" />
@@ -254,7 +253,6 @@ export default function BigPayment({
                   />
                 </View>
               </View>
-            </View>
           </Modal>
         )}
       </View>

@@ -36,14 +36,15 @@ export default function EnvelopeForm(props: IProps) {
   } = props;
 
   return (
-    <View className="w-full bg-my-white-dark h-full items-center justify-start p-4 gap-4 m-auto">
-      <MyText className="text-my-blue-dark p-2 text-3xl text-center w-full">
+    <View className="w-full bg-my-blue-dark h-fit items-center justify-center p-4 gap-4 m-auto">
+      <MyText className="text-my-white-dark p-2 text-3xl text-center w-full">
         {isEditing ? "Edit Envelope" : "Add New Nvelope"}
       </MyText>
       <View className="w-full gap-4">
         <Input
           id="newEnvelopeName"
-          label="What is your envelope for?"
+          label="What is your nvelope for?"
+          labelColor="text-my-white-light"
           placeholder="Envelope name"
           value={newEnvelopeName ?? ""}
           onChange={(e) => setNewEnvelopeName(e.toLowerCase())}
@@ -53,7 +54,7 @@ export default function EnvelopeForm(props: IProps) {
             <MoneyInput
               id="newTotal"
               label="How much do you want to add?"
-              labelColor="black"
+              labelColor="text-my-white-light"
               placeholder="Envelope Amount"
               value={newEnvelopeTotal}
               onChange={setNewEnvelopeTotal}

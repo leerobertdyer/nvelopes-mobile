@@ -1,10 +1,8 @@
-
 import { useCallback, useEffect, useRef, useState } from "react";
 import Loading from "../components/Loading";
 import Header from "../components/Nav/Header";
 import {
   editDatabaseWithTransaction,
-  editIsNewUser,
   editPayments,
   editSnowballTargetPaymentId,
 } from "../firebase/editData";
@@ -12,7 +10,6 @@ import { format, parse } from "date-fns";
 import Entypo from "@expo/vector-icons/Entypo";
 import PaymentForm from "../components/Forms/PaymentForm";
 import CongratsPaidOffModal from "../components/Payments/CongratsPaidOffModal";
-import PageTour from "../components/PageTour";
 import { useAuth } from "../context/AuthContext/useAuth";
 import { useBudget } from "../context/BudgetContext/useBudget";
 import Toast from "react-native-toast-message";
@@ -31,10 +28,13 @@ import { MyText } from "../components/MyText";
 import Btn from "../components/Buttons/Btn";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import { Picker } from "@react-native-picker/picker";
-import { getSnowballAmount } from "../util/paymentUtils";
+import {
+  getSnowballAmount,
+  getSnowballName,
+  getSnowballPayment,
+} from "../util/paymentUtils";
 import BigPayment from "../components/Payments/BigPayment";
-import firestore from "@react-native-firebase/firestore"
-
+import firestore from "@react-native-firebase/firestore";
 
 interface iDebtGrid {
   name: string;
@@ -119,8 +119,6 @@ export default function Debt() {
     payDate,
     snowballTargetPaymentId,
     setSnowballTargetPaymentId,
-    isNewUser,
-    setIsNewUser,
   } = useDatabase();
   const { remainingDebt } = paymentsTotal(
     payments,
@@ -142,6 +140,8 @@ export default function Debt() {
   const [additionalPaymentAmount, setAdditionalPaymentAmount] = useState(0);
   const [paidOffDebtName, setPaidOffDebtName] = useState<string | null>(null);
   const [showDeletePayment, setShowDeletePayment] = useState(false);
+  const [showSnowballTarget, setShowSnowballTarget] = useState(false);
+  const [newSnowballAmount, setNewSnowballAmount] = useState(getSnowballAmount(payments));
 
   function debtHasAllValues(d: Payment) {
     return (
@@ -233,11 +233,13 @@ export default function Debt() {
       p.id === "SNOWBALL" ? { ...p, amount: p.amount + n } : p,
     );
     setPayments(newPayments);
+    setNewSnowballAmount(n);
     await editDatabaseWithTransaction({
       t: {
-       id: createTransactionId(user),
+        id: createTransactionId(user),
         type: "SNOWBALL",
         createdAt: firestore.Timestamp.now(),
+        amount: n,
         description: `Manually edited snowball to $${n}`,
         createdBy: user.email ?? user.uid,
       },
@@ -266,7 +268,7 @@ export default function Debt() {
     setPayments(updatedPayments);
     await editDatabaseWithTransaction({
       t: {
-       id: createTransactionId(user),
+        id: createTransactionId(user),
         type: "DELETE",
         createdAt: firestore.Timestamp.now(),
         description: `Deleted debt ${debtMenuOpen.name}`,
@@ -295,7 +297,7 @@ export default function Debt() {
       const debt = payments.find((p) => p.id === debtId);
       await editDatabaseWithTransaction({
         t: {
-         id: createTransactionId(user),
+          id: createTransactionId(user),
           type: "SNOWBALL",
           createdAt: firestore.Timestamp.now(),
           nvelopeOrPaymentId: debt?.id,
@@ -315,11 +317,6 @@ export default function Debt() {
     }
   }
 
-  async function handleEditSnowball() {
-    setShowEditSnowball(false);
-    Toast.show({ type: "success", text1: "Snowball updated" });
-  }
-
   async function handleApplyAdditionalPayment() {
     const debt = additionalPaymentDebt;
     if (!debt || !activeBudgetId || !user) return;
@@ -336,7 +333,7 @@ export default function Debt() {
     setPayments(updatedPayments);
     await editDatabaseWithTransaction({
       t: {
-       id: createTransactionId(user),
+        id: createTransactionId(user),
         type: "EXTRA",
         createdAt: firestore.Timestamp.now(),
         nvelopeOrPaymentId: debt.id,
@@ -360,7 +357,7 @@ export default function Debt() {
       const nextSnowball = payments.find((p) => p.id === nextId);
       await editDatabaseWithTransaction({
         t: {
-         id: createTransactionId(user),
+          id: createTransactionId(user),
           type: "SNOWBALL",
           createdAt: firestore.Timestamp.now(),
           nvelopeOrPaymentId: debt.id,
@@ -384,8 +381,8 @@ export default function Debt() {
 
   if (showDeletePayment && payDate && debtMenuOpen) {
     return (
-      <View className="w-full h-full">
-        <View className="bg-my-black-dark w-full h-fit justify-center items-center ">
+      <View className="w-full h-fit m-auto p-4 bg-my-black-dark w-">
+        <View className="full h-fit justify-center items-center ">
           <MyText className="p-4 rounded-md text-my-white-dark w-full text-center">
             Are you sure you want to delete "{debtMenuOpen.name}"?
           </MyText>
@@ -394,19 +391,18 @@ export default function Debt() {
           </MyText>
           <View className="flex gap-2 items-center justify-center w-[95%]">
             <Btn
-              text="No"
+              text="Delete"
               color="red"
               onPress={() => {
+                deleteBill();
                 setShowDeletePayment(false);
                 setDebtMenuOpen(null);
               }}
             />
-
             <Btn
-              text="Yes"
-              color="green"
+              text="Back"
+              color="gold"
               onPress={() => {
-                deleteBill();
                 setShowDeletePayment(false);
                 setDebtMenuOpen(null);
               }}
@@ -426,11 +422,15 @@ export default function Debt() {
           <MoneyInput
             id="newSnowballAmount"
             label="Snowball Amount"
-            value={getSnowballAmount(payments)}
-            onChange={handleUpdateSnowball}
+            value={newSnowballAmount}
+            onChange={(n) => setNewSnowballAmount(Number(n))}
             placeholder={`$${getSnowballAmount(payments).toFixed(2)}`}
           />
-          <Btn color="gold" onPress={handleEditSnowball} text="Save" />
+          <Btn
+            color="gold"
+            onPress={() => handleUpdateSnowball(newSnowballAmount)}
+            text="Save"
+          />
           <Btn
             color="red"
             onPress={() => setShowEditSnowball(false)}
@@ -451,7 +451,7 @@ export default function Debt() {
             Additional payment
           </MyText>
           <MyText className="text-my-white-dark text-sm mb-4">
-            "{debt.name}"
+            {debt.name}
           </MyText>
           <MyText className="text-my-white-dark text-xs mb-2">
             Remaining: ${maxPay.toFixed(2)}
@@ -528,28 +528,13 @@ export default function Debt() {
     : null;
 
   return (
-    <>
-      <PageTour
-        visible={isNewUser}
-        onDismiss={async () => {
-          if (activeBudgetId) {
-            await editIsNewUser(false, activeBudgetId);
-            setIsNewUser(false);
-          }
-        }}
-      >
-        <MyText>
-          Track your <MyText className="text-my-red-light">debts</MyText> and
-          payoff dates here. Set a{" "}
-          <MyText className="text-my-blue-light">snowball</MyText> amount to add
-          extra toward one target debt each period. Tap a debt to edit or make
-          an additional payment.
-        </MyText>
-      </PageTour>
-      <Header links={["Home", "Settings"]} />
+    <View className="w-full h-full bg-my-blue-dark py-4">
+      <View className="py-4">
+        <Header links={["Home", "Settings"]} />
+      </View>
       <ScrollView
         contentContainerClassName="items-center"
-        className="w-full h-full my-0 py-[3rem] bg-my-blue-dark text-my-white-dark"
+        className="w-full h-full my-0 py-[3rem] bg-my-blue-dark"
       >
         <View className="bg-my-black-base/40 p-2 rounded-md w-[80%] mb-[1rem] items-center gap-2">
           <MyText className="text-my-white-dark">TOTAL DEBT</MyText>
@@ -584,17 +569,6 @@ export default function Debt() {
               </View>
             </View>
           )}
-        </View>
-        <View className="bg-my-black-base/40 p-2 rounded-md text-my-blue-light mb-[1rem] w-[80%] items-center justify-between gap-2 px-3 py-2">
-          <View className="flex items-center justify-between gap-2">
-            <MyText className="text-my-white-light">❄️ Snowball ❄️</MyText>
-            <MyText className="text-my-white-dark">
-              ${getSnowballAmount(payments).toFixed(2)}
-            </MyText>
-          </View>
-          <Pressable onPress={() => setShowEditSnowball(true)}>
-            <MyText className="text-my-blue-light text-xs">Edit</MyText>
-          </Pressable>
         </View>
 
         {debtsMissingInfo.length > 0 && (
@@ -664,19 +638,51 @@ export default function Debt() {
             )}
           </View>
         )}
+                  <View className="bg-my-black-base/40 p-2 rounded-md text-my-blue-light mb-[1rem] w-[80%] items-center justify-between gap-4 px-3 py-6">
+                    <View className="flex items-center justify-between gap-2">
+                      <MyText className="text-my-white-light">
+                        ❄️ Snowball ❄️
+                      </MyText>
+                      <View className="flex-row items-center justify-between w-[70%] gap-4">
+                        <MyText className="text-my-white-dark">
+                          ${getSnowballAmount(payments).toFixed(2)}
+                        </MyText>
+                        <Pressable onPress={() => setShowEditSnowball(true)}>
+                          <MyText className="text-my-blue-light text-sm underline">
+                            Edit
+                          </MyText>
+                        </Pressable>
+                      </View>
+                    </View>
 
+                    <View className="flex-row items-center justify-between w-[70%] gap-4">
+                      <MyText className="text-my-white-light">
+                        {getSnowballName(
+                          payments,
+                          snowballTargetPaymentId ?? "",
+                        )}
+                      </MyText>
+                      <Pressable
+                        onPress={() =>
+                          setShowSnowballTarget(!showSnowballTarget)
+                        }
+                      >
+                        <MyText className="text-my-blue-light underline text-sm">
+                          Edit
+                        </MyText>
+                      </Pressable>
+                    </View>
+                  </View>
         {debts.length > 0 &&
           (() => {
             const debtsByLowestOwed = [...debts]
               .filter((d) => d.total! > 0)
               .sort((a, b) => (a.total ?? 0) - (b.total ?? 0));
             return (
-              <View className="bg-my-black-base/40 p-4 rounded-md w-[80%] m-auto">
-                <View className="gap-2 mb-4">
-                  <MyText className="text-my-white-dark text-sm text-center">
-                    Snowball target
-                  </MyText>
-                  {debtsByLowestOwed.length > 1 ? (
+              <View className="bg-my-black-base/40 p-4 rounded-md w-[100%] m-auto">
+                <View className="gap-2 mb-4 items-center">
+<MyText className="text-my-white-light mb-2">Debts</MyText>
+                  {debtsByLowestOwed.length > 1 && showSnowballTarget ? (
                     <Picker
                       id="snowball-target"
                       selectedValue={effectiveSnowballTargetId ?? ""}
@@ -685,7 +691,7 @@ export default function Debt() {
                         if (id) handleSnowballTargetChange(id);
                       }}
                       style={{
-                        width: "100%",
+                        width: "80%",
                         backgroundColor: "#fff2d9",
                         borderRadius: 9,
                       }}
@@ -700,23 +706,22 @@ export default function Debt() {
                         />
                       ))}
                     </Picker>
-                  ) : debtsByLowestOwed.length === 1 && (
-                    <MyText className="text-gray-400 text-center">
-                      "{debtsByLowestOwed[0].name}"
-                    </MyText>
+                  ) : (
+                    debtsByLowestOwed.length === 1 && (
+                      <MyText className="text-gray-400 text-center">
+                        "{debtsByLowestOwed[0].name}"
+                      </MyText>
+                    )
                   )}
                 </View>
-                <MyText className="text-xs text-center text-my-white-dark mb-[1rem]">
-                  Click Debt To View/Edit
-                </MyText>
                 <View className="w-full flex-row justify-between">
                   <MyText className="w-[40%] text-my-white-dark text-xs">
                     Name
                   </MyText>
-                  <MyText className="w-[30%] text-my-white-dark text-xs">
+                  <MyText className="w-[30%] text-my-white-dark text-xs text-right pr-4">
                     Interest
                   </MyText>
-                  <MyText className="w-[30%] text-my-white-dark text-xs">
+                  <MyText className="w-[30%] text-my-white-dark text-xs text-right">
                     Remainder
                   </MyText>
                 </View>
@@ -728,7 +733,7 @@ export default function Debt() {
                       <View className="border-y-2 border-my-white-dark my-2 w-full py-2">
                         <View className="w-full flex-row justify-center gap-12">
                           <MyText
-                            className={`text-center w-[40%] ${d.id === effectiveSnowballTargetId ? "text-my-blue-light" : "text-my-white-light"}`}
+                            className={`text-center w-[40%] text-sm ${d.id === effectiveSnowballTargetId ? "text-my-blue-light" : "text-my-white-light"}`}
                           >
                             {d.id === effectiveSnowballTargetId
                               ? `❄️ ${d.name} ❄️`
@@ -788,6 +793,6 @@ export default function Debt() {
           onClose={() => setPaidOffDebtName(null)}
         />
       )}
-    </>
+    </View>
   );
 }

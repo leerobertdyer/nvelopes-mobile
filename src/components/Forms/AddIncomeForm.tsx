@@ -41,8 +41,8 @@ export default function AddIncomeForm({
   return (
     <>
       {showLoading && <Loading text={loadingText} />}
-      <View className="bg-my-white-dark h-full">
-        <MyText className="text-center w-full p-2 text-3xl mb-4">
+      <View className="bg-my-green-dark h-fit w-full justify-center m-auto">
+        <MyText className="text-center w-full p-2 text-3xl mb-4 text-my-white-light">
           Add Income
         </MyText>
         <View className="bg-my-green-dark rounded-md text-my-white-light w-[90vw] mx-auto p-4 pb-6 gap-4 ">

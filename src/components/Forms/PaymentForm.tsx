@@ -232,12 +232,12 @@ export default function PaymentForm({
 
   return (
     <ScrollView
-      className="flex-[1] bg-my-green-dark"
+      className=""
       contentContainerStyle={{
         flexGrow: 1,
       }}
     >
-      <View className="gap-2 overflow-y-auto text-my-white-dark bg-my-green-dark w-full text-center px-2 py-8">
+      <View className="gap-2 justify-center text-my-white-dark bg-my-green-dark w-full h-fit text-center px-2 py-8 m-auto">
         <MyText className="text-center w-full text-my-white-light p-2 text-3xl">
           {paymentToEdit ? "Edit Payment" : "Add Payment"}
         </MyText>
@@ -325,7 +325,7 @@ export default function PaymentForm({
               newPayment.amount > 0 &&
               payPeriodInterval !== ("MONTHLY" as Interval) && (
                 <View className="flex-row items-center gap-3 mb-4 w-full justify-center">
-                  <MyText className="text-sm w-fit">
+                  <MyText className="text-sm w-fit text-my-white-light">
                     Split across pay periods
                   </MyText>
 
@@ -346,7 +346,7 @@ export default function PaymentForm({
                     ? "Target Date (when you need the money)"
                     : "Due Date"}
                 </MyText>
-                <View className="text-black rounded-md overflow-hidden border-2 border-my-white-dark text-center bg-my-white-light p-2 w-full">
+                <View className="text-black rounded-md overflow-hidden border-2 border-my-white-dark text-center bg-my-white-light p-2 w-[70%]">
                   <Calendar
                     markedDates={{
                       [newPaymentDate]: {
@@ -439,7 +439,7 @@ export default function PaymentForm({
                       handleSetNewInterval(e.toUpperCase() as Interval)
                     }
                     style={{
-                      width: "100%",
+                      width: "70%",
                       backgroundColor: "#fff2d9",
                       borderRadius: 9,
                     }}

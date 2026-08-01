@@ -33,7 +33,7 @@ export default function IntervalSelector({
       )}
       <Picker
         style={{
-          width: "100%",
+          width: "70%",
           backgroundColor: "#fff2d9",
           borderRadius: 9,
         }}

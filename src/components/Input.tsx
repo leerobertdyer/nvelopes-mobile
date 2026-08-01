@@ -13,6 +13,7 @@ interface ITextInput {
   ref?: React.RefObject<TextInput | null>;
   onBlur?: (e: BlurEvent) => void;
   required?: boolean
+  labelColor?: string
 }
 
 export default function Input({
@@ -24,10 +25,11 @@ export default function Input({
   maxLength,
   ref,
   onBlur,
+  labelColor="text-my-black-dark"
 }: ITextInput) {
   return (
     <View className="w-[90%] h-fit  gap-2 items-center justify-center self-center">
-      {label ? <MyText className="p-2 w-full text-center">{label}</MyText> : null}
+      {label ? <MyText className={`${labelColor} p-2 w-full text-center`}>{label}</MyText> : null}
       <TextInput
         ref={ref}
         className="bg-my-white-light border-2 border-my-white-dark rounded-md p-2 w-full max-w-[20rem] text-my-black-dark text-center"

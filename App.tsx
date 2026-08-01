@@ -24,7 +24,6 @@ import {
 import TransactionProvider from "./src/context/TransactionContext/TransactionProvider";
 import * as Linking from "expo-linking";
 import AcceptInvite from "./src/screens/AcceptInvites";
-// import * as Updates from 'expo-updates';
 
 const linking = {
   // Prefixes the app will respond to
@@ -57,12 +56,12 @@ const toastConfig = {
   success: (props: BaseToastProps) => (
     <BaseToast
       {...props}
-      style={{ borderLeftColor: "#038894", backgroundColor: "#076346" }}
+      style={{ borderLeftColor: "#076346", backgroundColor: "#fcca68", borderLeftWidth: 16 }}
       contentContainerStyle={{ paddingHorizontal: 15 }}
       text1Style={{
         fontSize: 15,
         fontWeight: "600",
-        color: "#fcca68",
+        color: "#121212",
         fontFamily: "myFont",
       }}
       text2Style={{ fontSize: 13 }}
@@ -71,35 +70,16 @@ const toastConfig = {
   error: (props: BaseToastProps) => (
     <BaseToast
       {...props}
-      style={{ borderLeftColor: "#038894", backgroundColor: "#ad0241" }}
-      text1Style={{ fontSize: 15, color: "#fcca68", fontFamily: "myFont" }}
+      style={{ borderLeftColor: "#ad0241", backgroundColor: "#fcca68" }}
+      text1Style={{
+        fontSize: 15,
+        fontWeight: "600",
+        color: "#121212",
+        fontFamily: "myFont",
+      }}
     />
   ),
 };
-
-// useEffect(() => {
-
-// async function debugCheckUpdate() {
-//   console.log('[NVELOPES] isEmbeddedLaunch:', Updates.isEmbeddedLaunch);
-//   console.log('[NVELOPES] channel:', Updates.channel);
-//   console.log('[NVELOPES] runtimeVersion:', Updates.runtimeVersion);
-//   console.log('[NVELOPES] updateId:', Updates.updateId);
-
-//   try {
-//     const result = await Updates.checkForUpdateAsync();
-//     console.log('[NVELOPES] checkForUpdateAsync result:', JSON.stringify(result));
-
-//     if (result.isAvailable) {
-//       const fetched = await Updates.fetchUpdateAsync();
-//       console.log('[NVELOPES] fetchUpdateAsync result:', JSON.stringify(fetched));
-//       await Updates.reloadAsync();
-//     }
-//   } catch (e) {
-//     console.log('[NVELOPES] Updates check error:', e);
-//   }
-// }
-// debugCheckUpdate()
-// }, [])
 
 SplashScreen.preventAutoHideAsync(); // for fonts
 
@@ -107,7 +87,12 @@ const Stack = createNativeStackNavigator();
 
 function RootStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: "#fff2d9" },
+      }}
+    >
       <Stack.Screen name="Home" component={Home} />
       <Stack.Screen name="Settings" component={Settings} />
       <Stack.Screen name="Debt" component={Debt} />
@@ -142,7 +127,7 @@ function GlobalLayout() {
     >
       <NavigationContainer ref={navigationRef} linking={linking}>
         <RootStack />
-        <Toast config={toastConfig} position="bottom" />
+        <Toast config={toastConfig} position="top" />
       </NavigationContainer>
     </SafeAreaView>
   );
