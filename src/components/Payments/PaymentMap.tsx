@@ -46,7 +46,7 @@ export default function PaymentMap({
         key={p.id}
         onPress={() => handleEditBill(p)}
         className={`flex-row py-2  justify-center items-center w-full rounded-sm
-          ${deriveIsPaid(p) ? "bg-my-white-dark/20" : "bg-my-white-dark/50"} ${hidePayments && "rounded-md"}`}
+          ${deriveIsPaid(p) && !hidePayments ? "bg-my-white-dark/20" : "bg-my-white-dark/50"} ${hidePayments && "rounded-md"}`}
       >
         <>
           {!hidePayments && (
@@ -124,15 +124,19 @@ export default function PaymentMap({
 
   return (
     <View className="h-fit w-full mb-8">
-      <View className="w-full flex-row items-center justify-between px-4">
+      <View className="w-full flex-row items-center justify-between px-4 py-2 border-y-2 bg-my-white-dark">
         <Pressable onPress={() => setView("CURRENT")}>
-          <MyText className="text-my-blue-dark">Current Payments</MyText>
+          <MyText className="text-my-black-dark underline border-r-2 text-center pr-4">
+            Current Payments
+          </MyText>
         </Pressable>
         <Pressable onPress={() => setView("ALL")}>
-          <MyText className="text-my-blue-dark">All Payments</MyText>
+          <MyText className="text-my-black-dark underline border-r-2 text-start pr-6">
+            All Payments
+          </MyText>
         </Pressable>
         <Pressable onPress={() => setView("TRANSACTIONS")}>
-          <MyText className="text-my-blue-dark">Transactions</MyText>
+          <MyText className="text-my-black-dark underline">Transactions</MyText>
         </Pressable>
       </View>
       <ScrollView className="">
@@ -148,9 +152,14 @@ export default function PaymentMap({
         <View className="h-fit w-full">
           {view === "ALL" && (
             <View className="p-4 gap-[2px] w-full">
-              {payments.map((p) => (
-                <RenderPayment key={p.id} p={p} hidePayments />
-              ))}
+              {[...payments]
+                .sort(
+                  (a, b) =>
+                    a.dueDate.toDate().getDate() - b.dueDate.toDate().getDate(),
+                )
+                .map((p) => (
+                  <RenderPayment key={p.id} p={p} hidePayments />
+                ))}
             </View>
           )}
         </View>

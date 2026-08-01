@@ -20,6 +20,7 @@ import {
   lastDayOfMonth,
   startOfDay,
   startOfMonth,
+  startOfToday,
   subDays,
   subMonths,
   subWeeks,
@@ -1033,6 +1034,7 @@ export function getVirtualPaymentsForCurrentPeriod(
     (a, b) => a.dueDate.toMillis() - b.dueDate.toMillis(),
   );
 }
+
 
 /*
  * Helper to remove the added -INTERVAL- from a virtual Payment
