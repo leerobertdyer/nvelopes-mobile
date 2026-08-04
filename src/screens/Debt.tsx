@@ -141,7 +141,9 @@ export default function Debt() {
   const [paidOffDebtName, setPaidOffDebtName] = useState<string | null>(null);
   const [showDeletePayment, setShowDeletePayment] = useState(false);
   const [showSnowballTarget, setShowSnowballTarget] = useState(false);
-  const [newSnowballAmount, setNewSnowballAmount] = useState(getSnowballAmount(payments));
+  const [newSnowballAmount, setNewSnowballAmount] = useState(
+    getSnowballAmount(payments),
+  );
 
   function debtHasAllValues(d: Payment) {
     return (
@@ -308,6 +310,7 @@ export default function Debt() {
         func: () => editSnowballTargetPaymentId(activeBudgetId!, debtId),
       });
       Toast.show({ type: "success", text1: "Snowball target updated" });
+      setShowSnowballTarget(false);
     } catch (error) {
       console.error(`There was an issue changing snowball targets: ${error}`);
       Toast.show({
@@ -638,41 +641,33 @@ export default function Debt() {
             )}
           </View>
         )}
-                  <View className="bg-my-black-base/40 p-2 rounded-md text-my-blue-light mb-[1rem] w-[80%] items-center justify-between gap-4 px-3 py-6">
-                    <View className="flex items-center justify-between gap-2">
-                      <MyText className="text-my-white-light">
-                        ❄️ Snowball ❄️
-                      </MyText>
-                      <View className="flex-row items-center justify-between w-[70%] gap-4">
-                        <MyText className="text-my-white-dark">
-                          ${getSnowballAmount(payments).toFixed(2)}
-                        </MyText>
-                        <Pressable onPress={() => setShowEditSnowball(true)}>
-                          <MyText className="text-my-blue-light text-sm underline">
-                            Edit
-                          </MyText>
-                        </Pressable>
-                      </View>
-                    </View>
-
-                    <View className="flex-row items-center justify-between w-[70%] gap-4">
-                      <MyText className="text-my-white-light">
-                        {getSnowballName(
-                          payments,
-                          snowballTargetPaymentId ?? "",
-                        )}
-                      </MyText>
-                      <Pressable
-                        onPress={() =>
-                          setShowSnowballTarget(!showSnowballTarget)
-                        }
-                      >
-                        <MyText className="text-my-blue-light underline text-sm">
-                          Edit
-                        </MyText>
-                      </Pressable>
-                    </View>
-                  </View>
+        <View className="bg-my-black-base/40 p-2 rounded-md text-my-blue-light mb-[1rem] w-[80%] items-center justify-between gap-4 px-3 py-6">
+          <MyText className="text-my-white-light">❄️ Snowball ❄️</MyText>
+          <View className="flex-row items-center justify-between w-[70%] gap-4">
+            <MyText className="text-my-white-light">
+              {getSnowballName(payments, snowballTargetPaymentId ?? "")}
+            </MyText>
+            <Pressable
+              onPress={() => setShowSnowballTarget(!showSnowballTarget)}
+            >
+              <MyText className="text-my-blue-light underline text-sm">
+                Edit
+              </MyText>
+            </Pressable>
+          </View>
+          <View className="flex items-center justify-between gap-2">
+            <View className="flex-row items-center justify-between w-[70%] gap-4">
+              <MyText className="text-my-white-dark">
+                ${getSnowballAmount(payments).toFixed(2)}
+              </MyText>
+              <Pressable onPress={() => setShowEditSnowball(true)}>
+                <MyText className="text-my-blue-light text-sm underline">
+                  Edit
+                </MyText>
+              </Pressable>
+            </View>
+          </View>
+        </View>
         {debts.length > 0 &&
           (() => {
             const debtsByLowestOwed = [...debts]
@@ -681,7 +676,7 @@ export default function Debt() {
             return (
               <View className="bg-my-black-base/40 p-4 rounded-md w-[100%] m-auto">
                 <View className="gap-2 mb-4 items-center">
-<MyText className="text-my-white-light mb-2">Debts</MyText>
+                  <MyText className="text-my-white-light mb-2">Debts</MyText>
                   {debtsByLowestOwed.length > 1 && showSnowballTarget ? (
                     <Picker
                       id="snowball-target"

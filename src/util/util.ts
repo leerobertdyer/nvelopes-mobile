@@ -1,18 +1,10 @@
-import type {
-  Payment,
-  Nvelope,
-  Interval,
-  IntervalDates,
-  Backup,
-} from "../types";
+import type { Payment, Interval, IntervalDates } from "../types";
 import { BIWEEKLY, MONTHLY, SPLIT, WEEKLY, YEARLY } from "../constants";
 import {
   addMonths,
   addWeeks,
   addYears,
-  eachDayOfInterval,
   endOfMonth,
-  getDay,
   getDaysInMonth,
   isAfter,
   isBefore,
@@ -20,7 +12,6 @@ import {
   lastDayOfMonth,
   startOfDay,
   startOfMonth,
-  startOfToday,
   subDays,
   subMonths,
   subWeeks,
@@ -39,21 +30,6 @@ export function recalculateBudget(params: {
 }): number {
   const { currentAvailableBudget, diffAmount } = params;
   return currentAvailableBudget + diffAmount;
-}
-
-export function recalculateRentPayment(
-  rent: number,
-  interval: Interval,
-): number {
-  if (interval === MONTHLY) return rent;
-  if (interval === BIWEEKLY) return rent / 2;
-  if (interval === WEEKLY) return rent / 4;
-  return rent;
-}
-
-export function capitalizeFirstLetter(str: string | null): string {
-  if (!str) return "";
-  return str.slice(0, 1).toUpperCase() + str.slice(1).toLowerCase();
 }
 
 /** UUID v4. Uses crypto.randomUUID() when available (e.g. modern browsers), else a fallback for older iOS Safari/WebViews. */
@@ -79,31 +55,6 @@ export function randomUUID(): string {
     "",
   );
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-}
-
-export function resetEnvelopesSpentToZero(envelopes: Nvelope[]) {
-  const updatedEnvelopes = [...envelopes].map((e) => {
-    return { ...e, spent: 0 };
-  });
-  return updatedEnvelopes;
-}
-
-export function getOccurrencesOfWeekday(
-  year: number,
-  month: number,
-  weekday: number,
-) {
-  const start = new Date(year, month, 1);
-  const end = lastDayOfMonth(start);
-  const days = eachDayOfInterval({ start, end }).filter(
-    (d) => getDay(d) === weekday,
-  );
-  return {
-    first: days[0] || null,
-    second: days[1] || null,
-    third: days[2] || null,
-    fourth: days[3] || null,
-  };
 }
 
 export function calculateCurrentIntervalStart(d: Date, i: Interval): Date {
@@ -319,44 +270,6 @@ const WEEKDAY_NAMES = [
   "Friday",
   "Saturday",
 ] as const;
-
-/**
- * Human-readable interval label for a bill (e.g. "Weekly on Fri", "Monthly").
- * Used on Bills page for list display.
- */
-export function getBillIntervalLabel(p: Payment): string {
-  const interval = p.interval ?? "MONTHLY";
-  if (interval === WEEKLY) {
-    const day = p.dueDate?.toDate?.() ? getDay(p.dueDate.toDate()) : 0;
-    return `${WEEKDAY_NAMES[day]}s`;
-  }
-  if (interval === BIWEEKLY) return "Biweekly";
-  if (interval === MONTHLY) return "Monthly";
-  if (interval === YEARLY) return "Yearly";
-  if (interval === SPLIT) return "Split";
-  return "Monthly";
-}
-
-/**
- * Approximate monthly amount for a bill (for Bills page monthly view).
- * WEEKLY → amount * 4.33, BIWEEKLY → amount * 2, MONTHLY/SPLIT → amount, YEARLY → amount / 12.
- */
-export function getBillMonthlyAmount(p: Payment): number {
-  const interval = p.interval ?? "MONTHLY";
-  switch (interval) {
-    case WEEKLY:
-      return p.amount * (52 / 12);
-    case BIWEEKLY:
-      return p.amount * 2;
-    case MONTHLY:
-    case SPLIT:
-      return p.amount;
-    case YEARLY:
-      return p.amount / 12;
-    default:
-      return p.amount;
-  }
-}
 
 export function paymentsTotal(
   payments: Payment[],
@@ -668,19 +581,6 @@ export function applyPayoffRoll(
   return { updatedPayments, nextTargetId: nextId };
 }
 
-export function transformIntervalMidSentence(i: Interval) {
-  switch (i) {
-    case "WEEKLY":
-      return "week";
-    case "BIWEEKLY":
-      return "other week";
-    case "MONTHLY":
-      return "month";
-    case "YEARLY":
-      return "year";
-  }
-}
-
 /**
  * Removes undefined values from an object.
  * Firebase doesn't accept undefined values, so this cleans objects before saving.
@@ -857,28 +757,6 @@ export function getPaymentOccurrencesInRange(
 }
 
 /**
- * Generates virtual payment instances for the current pay period only.
- * Used for calculations that need just the current period's payments.
- */
-export function getPaymentOccurrencesForPeriod(
-  payment: Payment,
-  payPeriodInterval: Interval,
-  payDate: Timestamp,
-): Payment[] {
-  const { start: periodStart, end: periodEnd } = getCurrentIntervalDateRange(
-    payPeriodInterval,
-    payDate,
-  );
-  return getPaymentOccurrencesInRange(
-    payment,
-    payPeriodInterval,
-    payDate,
-    periodStart,
-    periodEnd,
-  );
-}
-
-/**
  * Generate virtual payment occurrences for SPLIT payments within a date range.
  *
  * Two modes:
@@ -1035,16 +913,11 @@ export function getVirtualPaymentsForCurrentPeriod(
   );
 }
 
-
 /*
  * Helper to remove the added -INTERVAL- from a virtual Payment
  */
 export function removeVirtualIdPortion(p: Payment) {
   return p.id.split(`-${p.interval}`)[0];
-}
-
-export function getBackupDataFromTimestampString(ts: string, backups: Backup) {
-  return backups.data.find((b) => b.backupTimeStamp.toString() === ts);
 }
 
 /**
