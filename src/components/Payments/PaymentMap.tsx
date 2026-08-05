@@ -72,13 +72,13 @@ export default function PaymentMap({
       <Pressable
         key={p.id}
         onPress={() => handleEditBill(p)}
-        className={`flex-row py-2  justify-center items-center w-full rounded-sm
+        className={`flex-row py-2  justify-center items-center w-full border-b-[2px] border-black
           ${deriveIsPaid(p) && !hidePayments ? "bg-my-white-dark/20" : "bg-my-white-dark/50"} ${hidePayments && "rounded-md"}`}
       >
-        <>
+        <View className="justify-center items-center w-full flex-row rounded-sm gap-2 ">
           {!hidePayments && (
             <Pressable
-              className="flex items-center justify-start mr-[1rem] flex-1"
+              className="items-center justify-center flex-1 h-12 p-2"
               onPress={(e) => {
                 e.stopPropagation();
                 handleUpdatePaid(p);
@@ -99,7 +99,8 @@ export default function PaymentMap({
               )}
             </Pressable>
           )}
-          <View className="w-10 h-10 ml-4 rounded-md bg-my-white-light border border-my-black-light mr-4">
+
+          <View className="w-10 h-10 mr-2 rounded-md bg-my-white-light border border-my-black-light">
             <View className="h-2 bg-my-red-base" />
             <View className="flex-1 items-center justify-center">
               <MyText className="text-sm font-bold">
@@ -107,7 +108,8 @@ export default function PaymentMap({
               </MyText>
             </View>
           </View>
-          <View className="flex-row items-center justify-start text-xsp-2 flex-[5] gap-4">
+
+          <View className="flex-row items-center justify-start text-xs flex-[5] gap-4 px-2">
             <MyText
               className={`text-[10px] px-2 rounded w-[3rem] text-center ${isSplitPayment ? "bg-my-green-dark text-my-white-light" : typeColor}`}
             >
@@ -120,30 +122,31 @@ export default function PaymentMap({
               {p.name}
             </MyText>
           </View>
+
           {p.total != null ? (
-            <MyText className="flex-row items-center justify-end gap-[2px] mr-[1rem]">
+            <View className="flex-row items-center justify-end gap-[2px] w-16 mr-[1rem]">
               <MyText
-                className={`text-sm ${deriveIsPaid(p) && "text-my-black-light"}`}
+                className={`w-fit text-sm ${deriveIsPaid(p) && "text-my-black-light"}`}
               >
                 ${Math.ceil(getEffectivePaymentAmount(p))}
               </MyText>
-              /
+              <MyText>/</MyText>
               <MyText
-                className={`text-sm ${deriveIsPaid(p) && "text-my-black-light"}`}
+                className={`w-fit text-sm ${deriveIsPaid(p) && "text-my-black-light"}`}
               >
                 {Math.ceil(p.total)}
               </MyText>
-            </MyText>
+            </View>
           ) : (
-            <View className="items-center justify-end gap-[2px] mr-[1rem]">
+            <View className="items-end justify-center gap-[2px] w-16 mr-[1rem]">
               <MyText
-                className={`text-sm ${deriveIsPaid(p) && "text-my-black-light"}`}
+                className={`w-fit text-sm ${deriveIsPaid(p) && "text-my-black-light"}`}
               >
                 ${getEffectivePaymentAmount(p).toFixed(2)}
               </MyText>
             </View>
           )}
-        </>
+        </View>
       </Pressable>
     );
   }
