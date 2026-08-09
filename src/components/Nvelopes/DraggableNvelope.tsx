@@ -105,7 +105,7 @@ export default function DraggableNvelope({
           }}
           onDragStart={() => {
             setEnvelopeId(envelope.id);
-            startShake();
+            startShake(envelope.id);
           }}
           onDragEnd={() => {
             setEnvelopeId("");
