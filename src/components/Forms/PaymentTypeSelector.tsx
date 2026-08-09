@@ -26,21 +26,21 @@ export default function PaymentTypeSelector({
     w-full
     shrink-0`}
     >
-      <Btn color="gold" onPress={() => onSelect("BILL")} text="BILL">
+      <Btn color="gold" shadow onPress={() => onSelect("BILL")} text="BILL">
         <MyText className="text-xs text-gray-700">Utilities, Subscriptions, Rent...</MyText>
       </Btn>
 
-      <Btn color="blue" onPress={() => onSelect("DEBT")} text='DEBT'>
+      <Btn color="blue" shadow onPress={() => onSelect("DEBT")} text='DEBT'>
         <MyText className="text-xs text-gray-700">Loans, Credit Cards, etc.</MyText>
       </Btn>
 
-      <Btn color="green" onPress={() => onSelect("FUND")} text="FUND">
+      <Btn color="green" shadow onPress={() => onSelect("FUND")} text="FUND">
         <MyText className="text-xs text-gray-300">Planned expenses</MyText>
       </Btn>
 
-      {onSkip && <Btn color="green" onPress={onSkip} text={skipText}></Btn>}
+      {onSkip && <Btn color="green" shadow onPress={onSkip} text={skipText}></Btn>}
 
-      {onBack && <Btn color="red" onPress={onBack} text="Back"></Btn>}
+      {onBack && <Btn color="red" shadow onPress={onBack} text="Back"></Btn>}
     </View>
   );
 }

@@ -100,7 +100,7 @@ export default function PaymentMap({
             </Pressable>
           )}
 
-          <View className="w-10 h-10 mr-2 rounded-md bg-my-white-light border border-my-black-light">
+          <View className="w-10 h-10 mr-2 rounded-md bg-my-white-light border border-my-black-light" style={hidePayments && {marginLeft: 10}}>
             <View className="h-2 bg-my-red-base" />
             <View className="flex-1 items-center justify-center">
               <MyText className="text-sm font-bold">

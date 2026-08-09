@@ -7,18 +7,18 @@ export default function Btn({
   onPress,
   color,
   disabled = false,
-  selected = false,
   shadow = false,
-  w = "w-[80%]"
+  w = "w-[80%]",
+  border = ""
 }: {
   children?: React.ReactNode;
   text?: string;
   onPress: () => void;
   color: string;
   disabled?: boolean;
-  selected?: boolean;
   shadow?: boolean;
   w?: string;
+  border?: string
 }) {
   const bgColor = () => {
     switch (color.toUpperCase()) {
@@ -41,12 +41,12 @@ export default function Btn({
       className={`rounded-lg h-[4.5rem] ${w} max-w-[20rem] p-2 items-center justify-center m-auto
           disabled:opacity-40
               ${bgColor()}
-              ${selected ? "border-2" : ""}`
+              ${border}`
             }
       onPress={onPress}
       style={shadow && {
         shadowColor: "#121212",
-        shadowOffset: { width: 5, height: 4 },
+        shadowOffset: { width: 3, height: 2 },
         shadowOpacity: 0.85,
         shadowRadius: 6,
       }}

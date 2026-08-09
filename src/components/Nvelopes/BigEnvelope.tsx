@@ -121,13 +121,16 @@ export default function BigEnvelope({
 
   return (
     <Modal>
-      <View className="bg-my-white-base">
-        <View className="h-full w-full justify-end pb-12 gap-8">
+      <View className="bg-my-white-light">
+        <View className="h-full w-full justify-around items-center py-12 gap-8">
+          <View className="w-full items-center mt-[4rem] p-4 gap-2 bg-my-white-dark/70">
+            <FontAwesome name="envelope-open" size={50} color="#FFF" />
+            <MyText className="text-my-black-dark text-center text-3xl">
+              {envelope.name}
+            </MyText>
+          </View>
           <View className="w-full items-center justify-start gap-4">
             <View className="w-[24rem] items-center justify-center gap-2 bg-my-blue-dark/80 p-8 rounded-md">
-              <MyText className="text-my-white-dark text-center text-3xl">
-                {envelope.name}
-              </MyText>
               <MyText
                 className={`${envelopeRemainder - amount < 0 ? "text-my-red-dark" : "text-my-white-light"} text-center text-s`}
               >
@@ -157,7 +160,7 @@ export default function BigEnvelope({
                   />
                 </>
               ) : (
-                <View className="items-center">
+                <View className="items-center w-full">
                   <MyText className="text-xl text-my-black-light mb-4">
                     Nvelope is empty{" "}
                     <FontAwesome name="envelope-open-o" size={20} />{" "}
@@ -177,7 +180,7 @@ export default function BigEnvelope({
               </MyText>
             </Pressable>
           </View>
-          <View className="gap-8">
+          <View className="gap-8 w-full">
             <Btn onPress={handleBack} color="red" text="Go Back" />
             <NvelopeActionBtns
               n={envelope}
