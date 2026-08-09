@@ -1,6 +1,6 @@
 import Loading from "../Loading";
 import TextInput from "../Input";
-import { View } from "react-native";
+import { ScrollView, View } from "react-native";
 import MoneyInput from "../Payments/MoneyInput";
 import Btn from "../Buttons/Btn";
 import { MyText } from "../MyText";
@@ -39,7 +39,7 @@ export default function AddIncomeForm({
   }
 
   return (
-    <>
+    <ScrollView contentContainerClassName="justify-center items-center h-full">
       {showLoading && <Loading text={loadingText} />}
       <View className="bg-my-green-dark h-fit w-full justify-center m-auto">
         <MyText className="text-center w-full p-2 text-3xl mb-4 text-my-white-light">
@@ -66,11 +66,11 @@ export default function AddIncomeForm({
             />
           </View>
           {cashAmount > 0 && cashName.length > 0 && (
-            <Btn text="Save" onPress={handleSave} color="green" />
+            <Btn text="Save" onPress={handleSave} color="gold" />
           )}
           <Btn text="Back" onPress={handleBack} color="red" />
         </View>
       </View>
-    </>
+    </ScrollView>
   );
 }
