@@ -24,7 +24,7 @@ export default function TinyTransaction({ t }: { t: NvelopesTransaction }) {
     return <BigTransaction t={transactionToEdit} onClose={resetState} />;
 
   return (
-    <Pressable onPress={() => handleSelectTransaction(t)} key={t.id} className="border-b-[2px] border-black">
+    <Pressable onPress={() => handleSelectTransaction(t)} className="border-b-[2px] border-black">
       <View
         className={`flex-row items-center justify-between px-2 w-[100%] h-[3.5rem] bg-my-white-base rounded-sm  gap-4`}
       >

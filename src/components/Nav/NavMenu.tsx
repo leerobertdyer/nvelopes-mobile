@@ -1,6 +1,6 @@
 import { Modal, Pressable, View } from "react-native";
 import Entypo from "@expo/vector-icons/Entypo";
-import Feather from '@expo/vector-icons/Feather';
+import Feather from "@expo/vector-icons/Feather";
 import { MyText } from "../MyText";
 import { navigationRef } from "../../../App";
 
@@ -17,7 +17,7 @@ export default function NavMenu({
 }: NavMenuProps) {
   return (
     <>
-      <Pressable onPress={() => setShowMenu(true)}>
+      <Pressable onPress={() => setShowMenu(true)} className="w-fit">
         <Entypo
           name="menu"
           size={28}

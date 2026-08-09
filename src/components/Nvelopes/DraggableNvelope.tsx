@@ -27,31 +27,41 @@ export default function DraggableNvelope({
 
   const rotation = useSharedValue(0);
 
+  const draggingId = useSharedValue("");
 
-  const startShake = () => {
+  const startShake = (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
+    draggingId.value = id;
     rotation.value = withRepeat(
       withSequence(
         withTiming(-2, { duration: 100 }),
         withTiming(2, { duration: 100 }),
       ),
-      -1, // infinite
+      -1,
       true,
     );
   };
+
   const stopShake = () => {
     rotation.value = withTiming(0, { duration: 100 });
+    draggingId.value = "";
   };
-
+  
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotation.value}deg` }],
   }));
 
   const handleSwap = (draggedId: string, targetId: string) => {
+    console.log("[SWAP CALLED]", { draggedId, targetId });
+
     if (draggedId === targetId) return;
 
     const newList = [...envelopes];
+    console.log(
+      "[CURRENT LIST]",
+      newList.map((e) => e.id),
+    );
+
     const draggedIndex = newList.findIndex((e) => e.id === draggedId);
     const targetIndex = newList.findIndex((e) => e.id === targetId);
 
@@ -61,7 +71,6 @@ export default function DraggableNvelope({
       newList[targetIndex],
       newList[draggedIndex],
     ];
-
     onReorder(newList);
   };
 

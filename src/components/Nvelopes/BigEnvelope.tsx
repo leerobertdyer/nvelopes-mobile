@@ -21,6 +21,7 @@ import { useAuth } from "../../context/AuthContext/useAuth";
 import firestore from "@react-native-firebase/firestore";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
 import Toast from "react-native-toast-message";
+import NvelopeActionBtns from "../Buttons/NvelopeActionBtns";
 
 interface IBigEnvelope {
   handleBack: () => void;
@@ -60,10 +61,6 @@ export default function BigEnvelope({
     }
     getEnvelopeTransactions();
   }, [activeBudgetId, envelope.id]);
-
-  const envelopeRemainderStr = (
-    Number(envelope.total) - Number(envelope.spent)
-  ).toFixed(2);
 
   const envelopeRemainder = envelope.total - envelope.spent;
 
@@ -116,7 +113,6 @@ export default function BigEnvelope({
           transactions={transactions}
           onClose={() => {
             setShowTransactions(false);
-            handleBack();
           }}
           name={envelope.name}
         />
@@ -126,111 +122,70 @@ export default function BigEnvelope({
   return (
     <Modal>
       <View className="bg-my-white-base">
-        <View className="h-full w-full">
-          <View className="w-full h-fit m-auto items-center justify-start gap-4">
-            <View className="w-[24rem] items-center justify-center gap-2 bg-my-black-dark/60 p-8 rounded-[24px]">
+        <View className="h-full w-full justify-end pb-12 gap-8">
+          <View className="w-full items-center justify-start gap-4">
+            <View className="w-[24rem] items-center justify-center gap-2 bg-my-blue-dark/80 p-8 rounded-md">
               <MyText className="text-my-white-dark text-center text-3xl">
-                "{envelope.name}"
+                {envelope.name}
               </MyText>
-              <MyText className="text-my-white-light text-center ">
-                ${envelopeRemainderStr}
+              <MyText
+                className={`${envelopeRemainder - amount < 0 ? "text-my-red-dark" : "text-my-white-light"} text-center text-s`}
+              >
+                Remaining: ${(envelopeRemainder - amount).toFixed(2)}
               </MyText>
-              <MoneyInput value={amount} onChange={(n) => setAmount(n)} />
-              <Btn
-                text={`Spend $${amount.toFixed(2)}`}
-                disabled={amount <= 0}
-                w="w-full"
-                color="green"
-                onPress={() => handleSpend(false)}
-              />
-              <Btn
-                text="Spend All"
-                w="w-full"
-                color="gold"
-                onPress={() => handleSpend(true)}
-              />
+              {envelope.total - envelope.spent > 0 ? (
+                <>
+                  <View className="w-full justify-between p-2 flex-row items-center gap-4">
+                    <MoneyInput
+                      w="w-[65%]"
+                      value={amount}
+                      onChange={(n) => setAmount(n)}
+                    />
+                  </View>
+                  <Btn
+                    text={amount > 0 ? `Spend $${amount.toFixed(2)}` : "Spend"}
+                    disabled={amount <= 0}
+                    w="w-full"
+                    color="green"
+                    onPress={() => handleSpend(false)}
+                  />
+                  <Btn
+                    text="Spend All"
+                    w="w-full"
+                    color="gold"
+                    onPress={() => handleSpend(true)}
+                  />
+                </>
+              ) : (
+                <View className="items-center">
+                  <MyText className="text-xl text-my-black-light mb-4">
+                    Nvelope is empty{" "}
+                    <FontAwesome name="envelope-open-o" size={20} />{" "}
+                  </MyText>
+                  <MyText>Use the ADD button below</MyText>
+                  <MyText>Or take from another Nvelope.</MyText>
+                </View>
+              )}
             </View>
 
+            <Pressable
+              disabled={transactions.length < 1}
+              onPress={() => setShowTransactions(true)}
+            >
+              <MyText className="text-center text-my-blue-dark underline">
+                Show Transactions
+              </MyText>
+            </Pressable>
+          </View>
+          <View className="gap-8">
             <Btn onPress={handleBack} color="red" text="Go Back" />
-
-            <View className="justify-center items-center gap-2 w-full ">
-              <Pressable
-                className="border-2 rounded-md p-2 bg-my-green-dark w-[18rem]"
-                onPress={() => handleAddCashToEnvelope(envelope)}
-                style={{
-                  shadowColor: "#121212",
-                  shadowOffset: { width: 5, height: 4 },
-                  shadowOpacity: 0.85,
-                  shadowRadius: 6,
-                }}
-              >
-                <View className="flex-row items-center h-10 w-full gap-4 p-[3px] border-2 rounded-md bg-my-white-base border-my-black-dark">
-                  <FontAwesome6 name="sack-dollar" color="#076346" size={20} />
-                  <MyText>Add Money From Budget</MyText>
-                </View>
-              </Pressable>
-              <Pressable
-                className="border-2 rounded-md p-2 bg-my-white-dark w-[18rem]"
-                onPress={() => setUpShowGiveAndTake(envelope)}
-                style={{
-                  shadowColor: "#121212",
-                  shadowOffset: { width: 5, height: 4 },
-                  shadowOpacity: 0.85,
-                  shadowRadius: 6,
-                }}
-              >
-                <View className="flex-row items-center h-10 w-full gap-4 p-[3px] border-2 rounded-md bg-my-white-base border-my-black-dark">
-                  <Entypo name="hand" color="black" size={20} />
-                  <MyText>Take From This Envelope</MyText>
-                </View>
-              </Pressable>
-              <Pressable
-                className="border-2 rounded-md p-2 bg-my-blue-light w-[18rem]"
-                onPress={() => handleSetupEdit(envelope)}
-                style={{
-                  shadowColor: "#121212",
-                  shadowOffset: { width: 5, height: 4 },
-                  shadowOpacity: 0.85,
-                  shadowRadius: 6,
-                }}
-              >
-                <View className="flex-row items-center h-10 w-full gap-4 p-[3px] border-2 rounded-md bg-my-white-base text-black border-my-black-dark">
-                  <FontAwesome name="pencil-square-o" size={20} />
-                  <MyText>Manually Edit Nvelope</MyText>
-                </View>
-              </Pressable>
-              <Pressable
-                className="border-2 rounded-md p-2 bg-my-red-base w-[18rem]"
-                onPress={() => handleDeleteEnvelope(envelope.id)}
-                style={{
-                  shadowColor: "#121212",
-                  shadowOffset: { width: 5, height: 4 },
-                  shadowOpacity: 0.85,
-                  shadowRadius: 6,
-                }}
-              >
-                <View className="flex-row items-center w-full gap-4 p-[2px] border-2 rounded-md bg-my-white-base border-my-black-dark">
-                  <EvilIcons name="trash" size={24} color="#ad0241" />
-                  <MyText>Delete Envelope</MyText>
-                </View>
-              </Pressable>
-              <Pressable
-                className="border-2 rounded-md p-2 bg-white w-[18rem] mt-4"
-                disabled={transactions.length < 1}
-                onPress={() => setShowTransactions(true)}
-                style={{
-                  shadowColor: "#121212",
-                  shadowOffset: { width: 5, height: 4 },
-                  shadowOpacity: 0.85,
-                  shadowRadius: 6,
-                }}
-              >
-                <View className="flex-row items-center h-10 w-full gap-4 p-[3px] border-2 rounded-md bg-my-white-base border-my-black-dark">
-                  <MaterialIcons name="notes" size={24} color="black" />
-                  <MyText>Show Transactions</MyText>
-                </View>
-              </Pressable>
-            </View>
+            <NvelopeActionBtns
+              n={envelope}
+              onTake={() => setUpShowGiveAndTake(envelope)}
+              onAdd={() => handleAddCashToEnvelope(envelope)}
+              onEdit={() => handleSetupEdit(envelope)}
+              onDelete={() => handleDeleteEnvelope(envelope.id)}
+            />
           </View>
         </View>
       </View>

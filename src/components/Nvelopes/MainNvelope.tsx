@@ -75,20 +75,19 @@ export default function MainEnvelope({
     case "deleteEnvelope":
       return (
         <Modal>
-          <View className="p-4 gap-2 bg-my-black-dark w-screen h-[50%] m-auto justify-center items-center ">
-            <MyText className="p-4 rounded-md text-my-white-dark w-full text-center">
-              Are you sure you want to delete "{envelope.name}"?
-            </MyText>
-            <MyText className="text-xs w-[85%] text-center text-white">
-              This will not affect your available budget.
-            </MyText>
-            <View className="w-full h-fit rounded-md justify-center items-center gap-2">
-              <Btn
-                text="Delete"
-                onPress={() => handleDeleteEnvelope?.()}
-                color="gold"
-              />
-              <Btn text="Cancel" onPress={() => handleBack?.()} color="red" />
+          <View className="w-full h-screen bg-my-white-light items-center justify-center">
+            <View className="p-4 gap-2 bg-my-black-dark w-screen h-[50%] m-auto justify-center items-center ">
+              <MyText className="p-4 rounded-md text-my-white-light w-full text-center">
+                Are you sure you want to delete "{envelope.name}"?
+              </MyText>
+              <View className="w-full h-fit rounded-md justify-center items-center gap-2">
+                <Btn
+                  text="Delete"
+                  onPress={() => handleDeleteEnvelope?.()}
+                  color="gold"
+                />
+                <Btn text="Go Back" onPress={() => handleBack?.()} color="red" />
+              </View>
             </View>
           </View>
         </Modal>

@@ -65,21 +65,31 @@ export default function Header({ links }: { links: string[] }) {
 
   return (
     <>
-      <View className="flex-row items-center justify-evenly gap-8 w-screen">
-        <MyText
-          className={`text-xl rounded-md text-my-white-light py-[.3rem] px-3 font-bold border-2 border-my-white-light
-              ${daysTillReset > 3 ? "bg-my-red-dark" : "bg-my-green-dark"}`}
-        >
-          {daysTillReset} days
-        </MyText>
-        <MyText
-          onPress={() => setShowEditSpendingBudget(true)}
-          className={`text-xl rounded-md text-my-white-light py-[.3rem] px-3 font-bold border-2 border-my-white-light
+      <View className="flex-row items-center justify-around gap-8 w-screen">
+        <View className="w-1/3 items-center">
+          <MyText
+            className={`text-xl rounded-md text-my-white-light py-[.3rem] px-3 font-bold border-2 border-my-white-light w-fit
+            ${daysTillReset > 3 ? "bg-my-red-dark" : "bg-my-green-dark"}`}
+          >
+            {daysTillReset} days
+          </MyText>
+        </View>
+        <View className="w-1/3 items-start">
+          <MyText
+            onPress={() => setShowEditSpendingBudget(true)}
+            className={`text-xl rounded-md text-my-white-light py-[.3rem] px-3 font-bold border-2 border-my-white-light w-fit
             ${totalSpendingBudget < 0 ? "bg-my-red-dark" : totalSpendingBudget === 0 ? "bg-my-black-dark" : "bg-my-green-dark"}`}
-        >
-          ${totalSpendingBudget.toFixed(2)}
-        </MyText>
-        <NavMenu showMenu={showMenu} setShowMenu={setShowMenu} links={links} />
+          >
+            ${totalSpendingBudget.toFixed(2)}
+          </MyText>
+        </View>
+        <View className="w-1/3 items-start">
+          <NavMenu
+            showMenu={showMenu}
+            setShowMenu={setShowMenu}
+            links={links}
+          />
+        </View>
       </View>
     </>
   );

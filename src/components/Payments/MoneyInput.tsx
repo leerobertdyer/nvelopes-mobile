@@ -17,6 +17,7 @@ interface MoneyInputProps {
   labelColor?: string;
   placeholder?: string;
   allowNegative?: boolean;
+  w?: string;
 }
 
 export default function MoneyInput({
@@ -26,6 +27,7 @@ export default function MoneyInput({
   labelColor,
   placeholder = "0.00",
   allowNegative = false,
+  w = "w-[90%]"
 }: MoneyInputProps) {
   const inputRef = useRef<TextInput>(null);
   const cents = dollarsToCents(value);
@@ -47,7 +49,7 @@ export default function MoneyInput({
   }
 
   return (
-    <View className="w-[90%] m-auto gap-2 items-center justify-center">
+    <View className={`${w} m-auto gap-2 items-center justify-center`}>
       {label != null && label !== "" && (
         <MyText
           className={`

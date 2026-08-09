@@ -16,17 +16,14 @@ import {
   editEnvelopes,
   editTotalSpendingBudget,
 } from "../../firebase/editData";
-import NvelopeCard from "./NvelopeCard";
 import { View } from "react-native";
 import GiveAndTake from "../Payments/GiveAndTake";
 import BigEnvelope from "./BigEnvelope";
-import { Pressable } from "react-native-gesture-handler";
-import { MyText } from "../MyText";
-import Entypo from "@expo/vector-icons/Entypo";
 import firestore from "@react-native-firebase/firestore";
 import { useAuth } from "../../context/AuthContext/useAuth";
 import { createTransactionId } from "../../util/util";
 import DraggableNvelope from "./DraggableNvelope";
+import Loading from "../Loading";
 
 interface NvelopeProps {
   resetState: () => void;
@@ -57,16 +54,7 @@ export default function Nvelopes({
   const [showGiveAndTake, setShowGiveAndTake] = useState(false);
   const [envelopeToEdit, setEnvelopeToEdit] = useState<Nvelope | null>(null);
   const [isEnvelopeSelected, setIsEnvelopeSelected] = useState(false);
-  const [sortedEnvelopes, setSortedEnvelopes] = useState<Nvelope[]>([]);
-  const [showEnvelopes, setShowEnvelopes] = useState(true);
-
-  useEffect(() => {
-    const stupidLargeNumber = 1000;
-    const sorted = [...envelopes].sort(
-      (a, b) => (a.order || stupidLargeNumber) - (b.order || stupidLargeNumber),
-    );
-    setSortedEnvelopes(sorted);
-  }, [envelopes]);
+  const [loadingText, setLoadingText] = useState("")
 
   function handleBack() {
     setShowGiveAndTake(false);
@@ -77,6 +65,7 @@ export default function Nvelopes({
 
   async function takeBalanceFromEnvelope(amount?: number) {
     if (!envelopeToEdit || !user) return;
+    setLoadingText("Taking...")
     let remainingBalancePlusTotal;
     if (amount) {
       envelopeToEdit.total -= amount;
@@ -100,6 +89,7 @@ export default function Nvelopes({
     });
     await editTotalSpendingBudget(remainingBalancePlusTotal, activeBudgetId!);
     setTotalSpendingBudget(remainingBalancePlusTotal);
+    setLoadingText("")
     handleBack();
   }
 
@@ -156,6 +146,8 @@ export default function Nvelopes({
     await editEnvelopes(nvelopes, activeBudgetId!);
   }
 
+  if (loadingText) return <Loading text={loadingText} />
+
   if (showGiveAndTake && envelopeToEdit) {
     return (
       <GiveAndTake
@@ -182,16 +174,13 @@ export default function Nvelopes({
     );
   }
 
-  const envelopesTotal = sortedEnvelopes.reduce((sum, e) => sum + e.total, 0);
-  const envelopesTotalStr = `$${Math.ceil(envelopesTotal).toFixed(2)}`;
-
   return (
     <View className="justify-center items-center w-full h-fit">
       <View className="w-full">
-        {showEnvelopes && sortedEnvelopes.length > 0 && (
+        { envelopes.length > 0 && (
           <DraggableNvelope
             onReorder={handleReorderNvelopes}
-            envelopes={sortedEnvelopes}
+            envelopes={envelopes}
             onPress={handleSelectListEnvelope}
           />
         )}

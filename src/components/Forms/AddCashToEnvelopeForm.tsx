@@ -1,4 +1,4 @@
-import { Modal, View } from "react-native";
+import { Modal, ScrollView, View } from "react-native";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
 import { Nvelope } from "../../types";
 import Btn from "../Buttons/Btn";
@@ -30,16 +30,18 @@ export default function AddCashToEnvelopeForm({
   return (
     <Modal>
       {showLoading && <Loading text={loadingText} />}
-      <View className="bg-my-black-base text-my-white-dark w-full h-full items-center justify-center">
-        <View className="h-fit m-auto w-full gap-2">
+      <ScrollView className="w-full h-full bg-my-white-light" contentContainerClassName="items-center justify-center min-h-full">
+        <View
+          className={`${totalSpendingBudget - cashAmount < 0 ? "bg-my-red-dark" : "bg-my-green-dark "} h-fit w-full  p-4`}
+        >
           <MyText className="text-my-white-base mb-2 text-center">
             Remaining Budget: ${(totalSpendingBudget - cashAmount).toFixed(2)}
           </MyText>
-          <MyText className="p-2 text-my-white-light mb-4 text-center">
-            Add <MyText className="text-my-green-base">cash</MyText> to{" "}
-            <MyText className="text-my-white-dark">
-              "{envelopeToEdit?.name}"
-            </MyText>
+          <MyText className="p-2 text-my-white-light text-center">
+            Add cash to
+          </MyText>
+          <MyText className="text-my-white-dark text-center mb-4">
+            {envelopeToEdit?.name}
           </MyText>
           <MoneyInput
             id="add-cash-amount"
@@ -48,16 +50,16 @@ export default function AddCashToEnvelopeForm({
             onChange={setCashAmount}
             placeholder="Amount"
           />
-          <View className="w-full items-center gap-2">
-            <Btn text="Add" onPress={addCashToEnvelope} color="green" />
+          <View className="w-full items-center gap-2 mt-4">
+            <Btn text="Add" onPress={addCashToEnvelope} color="gold" />
             <Btn
               onPress={() => setIsAddingCashToEnvelope(false)}
-              color="red"
+              color={totalSpendingBudget - cashAmount < 0 ? "green" : "red"}
               text="Go Back"
             />
           </View>
         </View>
-      </View>
+      </ScrollView>
     </Modal>
   );
 }
