@@ -1,6 +1,8 @@
 import auth from "@react-native-firebase/auth";
 import firestore from "@react-native-firebase/firestore";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import * as AppleAuthentication from "expo-apple-authentication";
+import { Platform } from "react-native";
 
 export type DeleteAccountResult =
   | { success: true }
@@ -17,6 +19,7 @@ async function reauthenticateUser(password?: string): Promise<ReauthResult> {
   if (!user) return { success: false, error: "Not signed in" };
 
   const hasGoogle = user.providerData.some((p) => p.providerId === "google.com");
+  const hasApple = user.providerData.some((p) => p.providerId === "apple.com");
   const hasPassword = user.providerData.some((p) => p.providerId === "password");
 
   if (hasGoogle) {
@@ -29,6 +32,37 @@ async function reauthenticateUser(password?: string): Promise<ReauthResult> {
       await user.reauthenticateWithCredential(credential);
       return { success: true };
     } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Sign-in was cancelled or failed";
+      return { success: false, error: message };
+    }
+  }
+
+  if (hasApple) {
+    if (Platform.OS !== "ios") {
+      return {
+        success: false,
+        error: "Re-authenticate with Apple on your iOS device to delete this account",
+      };
+    }
+    try {
+      const appleCredential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      if (!appleCredential.identityToken) {
+        return { success: false, error: "Apple sign-in failed" };
+      }
+      const credential = auth.AppleAuthProvider.credential(
+        appleCredential.identityToken,
+      );
+      await user.reauthenticateWithCredential(credential);
+      return { success: true };
+    } catch (e: unknown) {
+      if ((e as { code?: string })?.code === "ERR_REQUEST_CANCELED") {
+        return { success: false, error: "Sign-in was cancelled" };
+      }
       const message = e instanceof Error ? e.message : "Sign-in was cancelled or failed";
       return { success: false, error: message };
     }
