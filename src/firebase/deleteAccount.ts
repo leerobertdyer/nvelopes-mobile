@@ -3,6 +3,7 @@ import firestore from "@react-native-firebase/firestore";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { Platform } from "react-native";
+import { deleteBudgetAsOwner } from "./budgets";
 
 export type DeleteAccountResult =
   | { success: true }
@@ -88,6 +89,16 @@ async function reauthenticateUser(password?: string): Promise<ReauthResult> {
   return { success: false, error: "Unsupported sign-in method" };
 }
 
+/** Remove the user from budgets they don't own (memberIds + memberEmails + user budget ref). */
+async function leaveBudgetAsMember(userId: string, budgetId: string): Promise<void> {
+  const budgetDoc = firestore().doc(`budgets/${budgetId}`);
+  await budgetDoc.update({
+    memberIds: firestore.FieldValue.arrayRemove(userId),
+    [`memberEmails.${userId}`]: firestore.FieldValue.delete(),
+  });
+  await firestore().doc(`users/${userId}/budgets/${budgetId}`).delete();
+}
+
 export async function deleteAccount(options?: { password?: string }): Promise<DeleteAccountResult> {
   const user = auth().currentUser;
   if (!user) return { success: false, error: "Not signed in" };
@@ -102,6 +113,23 @@ export async function deleteAccount(options?: { password?: string }): Promise<De
   }
 
   try {
+    const budgetSnap = await firestore()
+      .collection("budgets")
+      .where("memberIds", "array-contains", uid)
+      .get();
+
+    for (const budgetDoc of budgetSnap.docs) {
+      const ownerId = (budgetDoc.data() as { ownerId?: string }).ownerId;
+      if (ownerId === uid) {
+        const ok = await deleteBudgetAsOwner(uid, budgetDoc.id);
+        if (!ok) {
+          return { success: false, error: `Failed to delete budget ${budgetDoc.id}` };
+        }
+      } else {
+        await leaveBudgetAsMember(uid, budgetDoc.id);
+      }
+    }
+
     const backupsRef = firestore().collection(`userBackups/${uid}/backups`);
     const snapshot = await backupsRef.get();
     for (const d of snapshot.docs) {

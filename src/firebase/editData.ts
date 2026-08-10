@@ -92,9 +92,11 @@ export async function editEnvelopes(envelopes: Nvelope[], budgetId: string) {
 }
 
 export async function editPayments(p: Payment[], budgetId: string) {
-  const sortedPayments = [...p].sort(
-    (a, b) => a.dueDate!.seconds! - b.dueDate!.seconds!,
-  );
+  const sortedPayments = [...p].sort((a, b) => {
+    const aSec = a.dueDate?.seconds ?? Number.MAX_SAFE_INTEGER;
+    const bSec = b.dueDate?.seconds ?? Number.MAX_SAFE_INTEGER;
+    return aSec - bSec;
+  });
   const cleanedPayments = cleanPaymentsForFirebase(sortedPayments);
   try {
     await budgetDataRef(budgetId).update({ payments: cleanedPayments });

@@ -1,6 +1,7 @@
 import * as AppleAuthentication from "expo-apple-authentication";
 import { Platform, View } from "react-native";
 import auth from "@react-native-firebase/auth";
+import Toast from "react-native-toast-message";
 
 export function AppleSignInButton() {
   if (Platform.OS !== "ios") return null;
@@ -21,6 +22,13 @@ export function AppleSignInButton() {
     } catch (e: any) {
       if (e.code === "ERR_REQUEST_CANCELED") return;
       console.error(e);
+      const message =
+        e instanceof Error
+          ? e.message
+          : typeof e?.message === "string"
+            ? e.message
+            : "Apple sign-in failed";
+      Toast.show({ type: "error", text1: "Apple sign-in failed", text2: message });
     }
   };
 

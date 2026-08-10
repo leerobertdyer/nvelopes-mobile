@@ -25,6 +25,7 @@ export default function DatabaseProvider({
   const { user } = useAuth();
   const { activeBudgetId, hasBudgets, handleRemovedFromBudget } = useBudget();
   const lastPaymentsWriteAtRef = useRef(0);
+  const [retryKey, setRetryKey] = useState(0);
 
   const [isLoadingDb, setIsLoadingDb] = useState(true);
   const [snowballTargetPaymentId, setSnowballTargetPaymentId] = useState<
@@ -47,6 +48,28 @@ export default function DatabaseProvider({
   const [dbError, setDbError] = useState<string | null>(null);
   const [documentExists, setDocumentExists] = useState<boolean | null>(null);
 
+  function clearBudgetDataState() {
+    setSnowballTargetPaymentId(null);
+    setPayDate(undefined);
+    setPayPeriodInterval("MONTHLY");
+    setEnvelopes([]);
+    setPaymentsState([]);
+    setIsNewUser(false);
+    setTotalSpendingBudget(0);
+    setBackups(null);
+    setDbError(null);
+    setDocumentExists(null);
+  }
+
+  function clearDbError() {
+    setDbError(null);
+  }
+
+  function retryDb() {
+    setDbError(null);
+    setRetryKey((k) => k + 1);
+  }
+
   function normalizeTimestamp(ts: any): Timestamp | null {
     if (!ts) return null;
     if (ts?.toDate instanceof Function) return ts; // already a proper Timestamp
@@ -63,25 +86,21 @@ export default function DatabaseProvider({
     };
   }
   useEffect(() => {
+    clearBudgetDataState();
+
     if (!user) {
-      setDocumentExists(null);
-      setPayDate(undefined);
       setIsLoadingDb(false);
       return;
     }
     if (!hasBudgets) {
-      setDocumentExists(null);
-      setPayDate(undefined);
       setIsLoadingDb(false);
       return;
     }
     if (!activeBudgetId) {
-      setPayDate(undefined);
       setIsLoadingDb(false);
       return;
     }
 
-    setPayDate(undefined);
     setIsLoadingDb(true);
     const dataRef = firestore().doc(
       `budgets/${activeBudgetId}/data/${BUDGET_DATA_DOC_ID}`,
@@ -128,7 +147,7 @@ export default function DatabaseProvider({
           handleRemovedFromBudget();
         } else {
           setDbError(
-            `Database error: ${error.message}. Please refresh the page.`,
+            `Database error: ${error.message}. Please try again.`,
           );
         }
         setIsLoadingDb(false);
@@ -138,7 +157,7 @@ export default function DatabaseProvider({
     return () => {
       unsubscribe();
     };
-  }, [user, activeBudgetId, hasBudgets]);
+  }, [user, activeBudgetId, hasBudgets, retryKey]);
 
   const value = {
     isLoadingDb,
@@ -160,6 +179,8 @@ export default function DatabaseProvider({
     backups,
     setBackups,
     dbError,
+    clearDbError,
+    retryDb,
     documentExists,
     setDocumentExists,
   };

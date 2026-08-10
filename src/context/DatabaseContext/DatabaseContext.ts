@@ -23,6 +23,8 @@ interface IDatabaseContext {
     setTotalSpendingBudget: (totalSpendingBudget: number) => void
     backups: Backup | null;
     dbError: string | null;
+    clearDbError: () => void;
+    retryDb: () => void;
     documentExists: boolean | null;
     setDocumentExists: (exists: boolean | null) => void;
 }

@@ -24,6 +24,7 @@ import {
 import TransactionProvider from "./src/context/TransactionContext/TransactionProvider";
 import * as Linking from "expo-linking";
 import AcceptInvite from "./src/screens/AcceptInvites";
+import { ErrorBoundary } from "./src/components/ErrorBoundary";
 
 const linking = {
   // Prefixes the app will respond to
@@ -56,7 +57,11 @@ const toastConfig = {
   success: (props: BaseToastProps) => (
     <BaseToast
       {...props}
-      style={{ borderLeftColor: "#076346", backgroundColor: "#FFF", borderLeftWidth: 16 }}
+      style={{
+        borderLeftColor: "#076346",
+        backgroundColor: "#FFF",
+        borderLeftWidth: 16,
+      }}
       contentContainerStyle={{ paddingHorizontal: 15 }}
       text1Style={{
         fontSize: 15,
@@ -65,7 +70,6 @@ const toastConfig = {
         fontFamily: "myFont",
       }}
       text2Style={{ fontSize: 13 }}
-      
     />
   ),
   error: (props: BaseToastProps) => (
@@ -127,7 +131,9 @@ function GlobalLayout() {
       }}
     >
       <NavigationContainer ref={navigationRef} linking={linking}>
-        <RootStack />
+        <ErrorBoundary>
+          <RootStack />
+        </ErrorBoundary>
         <Toast config={toastConfig} position="top" topOffset={60} />
       </NavigationContainer>
     </SafeAreaView>

@@ -1,4 +1,4 @@
-import {  View } from "react-native";
+import { View } from "react-native";
 import { useAuth } from "../context/AuthContext/useAuth";
 import { useEffect, useState } from "react";
 import { useBudget } from "../context/BudgetContext/useBudget";
@@ -17,8 +17,14 @@ import FirstTimeSetup from "../components/FirstTimeSetup";
 export default function Home() {
   const { user, isLoadingUser } = useAuth();
   const { isLoadingBudgets, activeBudgetId, hasBudgets } = useBudget();
-  const { isLoadingDb, dbError, documentExists, payDate } = useDatabase();
+  const { isLoadingDb, dbError, documentExists, payDate, retryDb } =
+    useDatabase();
   const [isLoading, setIsLoading] = useState(true);
+
+  // Reset loading when the signed-in account changes to avoid a cross-account data flash.
+  useEffect(() => {
+    setIsLoading(true);
+  }, [user?.uid]);
 
   useEffect(() => {
     if (!isLoadingUser && !isLoadingBudgets && !isLoadingDb) {
@@ -37,7 +43,6 @@ export default function Home() {
       if (shouldBackup) await backupUserDataSafe(user!, activeBudgetId!);
     }
     checkAndBackup();
-    
   }, [user, activeBudgetId, documentExists]);
 
   if (isLoading) return <Loading text="Welcome to Nvelopes..." />;
@@ -45,7 +50,9 @@ export default function Home() {
   if (!user) {
     return (
       <View className="gap-4 pt-[2rem] items-center w-full h-full bg-my-black-base">
-        <MyText className="text-2xl text-my-white-dark">Welcome to Nvelopes</MyText>
+        <MyText className="text-2xl text-my-white-dark">
+          Welcome to Nvelopes
+        </MyText>
         <MyText className="text-sm text-my-white-light">
           Old School Budgeting for the Digital Age
         </MyText>
@@ -68,7 +75,7 @@ export default function Home() {
             until this is resolved.
           </MyText>
           <View className="bg-my-red-base text-my-white-dark px-6 py-2 rounded-md">
-            <Btn color="gold" onPress={() => window.location.reload()}>Refresh Page</Btn>
+            <Btn color="gold" text="Try Again" onPress={retryDb} />
           </View>
         </View>
       </View>
@@ -95,5 +102,5 @@ export default function Home() {
     return <Loading text="Welcome to Nvelopes..." />;
   }
 
-  return <MainView />
+  return <MainView />;
 }

@@ -27,6 +27,7 @@ export default {
       associatedDomains: ["applinks:invite.nvelopes.app"],
       supportsTablet: true,
       buildReactNativeFromSource: true,
+      usesAppleSignIn: true,
       bundleIdentifier: IS_DEV ? "com.ldyer.nvelopes.dev" : "com.ldyer.nvelopes",
       googleServicesFile:
         process.env.GOOGLE_SERVICE_INFO_PLIST ?? "./GoogleService-Info.plist",
@@ -65,6 +66,7 @@ export default {
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
       "expo-font",
+      "expo-apple-authentication",
       ["expo-build-properties", { ios: { useFrameworks: "static" } }],
       [
         "@react-native-google-signin/google-signin",

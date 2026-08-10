@@ -32,7 +32,7 @@ import { DateData } from "react-native-calendars";
 import { sendPasswordResetEmailToUser } from "../firebase/emailAndPassword";
 import { deleteAccount } from "../firebase/deleteAccount";
 import firestore from "@react-native-firebase/firestore";
-import { Modal, Pressable, ScrollView, View } from "react-native";
+import { Modal, Pressable, ScrollView, View, Linking } from "react-native";
 import Btn from "../components/Buttons/Btn";
 import Input from "../components/Input";
 import { MyText } from "../components/MyText";
@@ -279,7 +279,9 @@ export default function Settings() {
         setShowDeleteAccountConfirm(false);
         setDeletePasswordStep(false);
         setDeletePassword("");
-        window.location.href = "/";
+        if (navigationRef.isReady()) {
+          navigationRef.reset({ index: 0, routes: [{ name: "Home" }] });
+        }
         return;
       }
       if ("needPassword" in result && result.needPassword) {
@@ -1094,6 +1096,16 @@ export default function Settings() {
               />
             )}
             <DeleteAccountButton />
+            <Pressable
+              className="mt-6 items-center py-2"
+              onPress={() =>
+                Linking.openURL("https://www.nvelopes.app/privacy")
+              }
+            >
+              <MyText className="text-my-blue-dark underline text-sm">
+                Privacy Policy
+              </MyText>
+            </Pressable>
           </View>
         )}
       </View>
