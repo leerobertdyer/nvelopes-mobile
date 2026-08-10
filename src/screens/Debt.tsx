@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Loading from "../components/Loading";
 import Header from "../components/Nav/Header";
 import {
+  addTransaction,
   editDatabaseWithTransaction,
   editPayments,
   editSnowballTargetPaymentId,
@@ -16,12 +17,14 @@ import Toast from "react-native-toast-message";
 import { Payment } from "../types";
 import { useDatabase } from "../context/DatabaseContext/useDatabase";
 import {
-  applyPayoffRoll,
   calculatePayoffDate,
   calculateSnowballPayoffDate,
   createTransactionId,
+  getRemainingDebtsForSnowball,
   paymentsTotal,
   removeVirtualIdPortion,
+  rollSnowballOnPayoff,
+  setSnowballAmount,
 } from "../util/util";
 import MoneyInput from "../components/Payments/MoneyInput";
 import { MyText } from "../components/MyText";
@@ -32,6 +35,7 @@ import {
   getSnowballAmount,
   getSnowballName,
   getSnowballPayment,
+  isSnowballPayment,
 } from "../util/paymentUtils";
 import BigPayment from "../components/Payments/BigPayment";
 import firestore from "@react-native-firebase/firestore";
@@ -138,12 +142,20 @@ export default function Debt() {
   const [additionalPaymentDebt, setAdditionalPaymentDebt] =
     useState<Payment | null>(null);
   const [additionalPaymentAmount, setAdditionalPaymentAmount] = useState(0);
-  const [paidOffDebtName, setPaidOffDebtName] = useState<string | null>(null);
+  const [pendingPayoff, setPendingPayoff] = useState<{
+    paidOffPayment: Payment;
+    paymentsAtPayoff: Payment[];
+  } | null>(null);
   const [showDeletePayment, setShowDeletePayment] = useState(false);
   const [showSnowballTarget, setShowSnowballTarget] = useState(false);
   const [newSnowballAmount, setNewSnowballAmount] = useState(
     getSnowballAmount(payments),
   );
+
+  // Keep the edit form's default in sync once payments load/change (e.g. after a roll).
+  useEffect(() => {
+    setNewSnowballAmount(getSnowballAmount(payments));
+  }, [payments]);
 
   function debtHasAllValues(d: Payment) {
     return (
@@ -210,6 +222,7 @@ export default function Debt() {
 
     for (const p of payments) {
       if (p.type === "DEBT") {
+        if (isSnowballPayment(p)) continue;
         if (p.total != null && p.total <= 0 && p.originalTotal) {
           nextPaidOff.push(p);
           continue;
@@ -230,10 +243,8 @@ export default function Debt() {
   }, [payments]);
 
   async function handleUpdateSnowball(n: number) {
-    if (!user) return;
-    const newPayments = payments.map((p) =>
-      p.id === "SNOWBALL" ? { ...p, amount: p.amount + n } : p,
-    );
+    if (!user || !activeBudgetId) return;
+    const newPayments = setSnowballAmount(payments, n, payDate);
     setPayments(newPayments);
     setNewSnowballAmount(n);
     await editDatabaseWithTransaction({
@@ -242,11 +253,11 @@ export default function Debt() {
         type: "SNOWBALL",
         createdAt: firestore.Timestamp.now(),
         amount: n,
-        description: `Manually edited snowball to $${n}`,
+        description: `Manually set snowball to $${n}`,
         createdBy: user.email ?? user.uid,
       },
-      budgetId: activeBudgetId!,
-      func: () => editPayments(newPayments, activeBudgetId!),
+      budgetId: activeBudgetId,
+      func: () => editPayments(newPayments, activeBudgetId),
     });
   }
 
@@ -350,31 +361,58 @@ export default function Debt() {
     setAdditionalPaymentAmount(0);
     if (newTotal <= 0 && debt.amount != null) {
       const paidOffPayment = updatedPayments.find((p) => p.id === debt.id)!;
-      const { updatedPayments: withBakedSnowball, nextTargetId: nextId } =
-        applyPayoffRoll(
-          updatedPayments,
-          paidOffPayment,
-          getSnowballAmount(payments),
-        );
-      setSnowballTargetPaymentId(nextId);
-      const nextSnowball = payments.find((p) => p.id === nextId);
-      await editDatabaseWithTransaction({
-        t: {
+      await addTransaction(
+        {
           id: createTransactionId(user),
-          type: "SNOWBALL",
+          type: "PAID_OFF",
           createdAt: firestore.Timestamp.now(),
           nvelopeOrPaymentId: debt.id,
-          description: `Extra payment of $${additionalPaymentAmount} Paid off ${debt?.name}! Changing snowball to ${nextSnowball?.name}`,
+          description: `Extra payment of $${amount} paid off "${debt.name}"`,
           createdBy: user.email ?? user.uid,
         },
-        budgetId: activeBudgetId!,
-        func: () => editSnowballTargetPaymentId(activeBudgetId, nextId),
-      });
-      setPayments(withBakedSnowball);
-      await editPayments(withBakedSnowball, activeBudgetId);
-      setPaidOffDebtName(debt.name);
+        activeBudgetId,
+      );
+      setPendingPayoff({ paidOffPayment, paymentsAtPayoff: updatedPayments });
     }
     Toast.show({ type: "success", text1: "Payment applied" });
+  }
+
+  const payoffCandidates = pendingPayoff
+    ? getRemainingDebtsForSnowball(
+        pendingPayoff.paymentsAtPayoff,
+        pendingPayoff.paidOffPayment.id,
+      )
+    : [];
+
+  async function handleRollSnowball(targetId: string) {
+    if (!pendingPayoff || !user || !activeBudgetId) return;
+    const { paidOffPayment, paymentsAtPayoff } = pendingPayoff;
+    const withSnowball = rollSnowballOnPayoff(
+      paymentsAtPayoff,
+      paidOffPayment,
+      payDate,
+    );
+    const nextTarget = withSnowball.find((p) => p.id === targetId);
+    setSnowballTargetPaymentId(targetId);
+    await editDatabaseWithTransaction({
+      t: {
+        id: createTransactionId(user),
+        type: "SNOWBALL",
+        createdAt: firestore.Timestamp.now(),
+        nvelopeOrPaymentId: paidOffPayment.id,
+        description: `Rolled "${paidOffPayment.name}"'s payment into the snowball, targeting "${nextTarget?.name}"`,
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId,
+      func: () => editSnowballTargetPaymentId(activeBudgetId, targetId),
+    });
+    setPayments(withSnowball);
+    await editPayments(withSnowball, activeBudgetId);
+    setPendingPayoff(null);
+  }
+
+  function handleDeclinePayoffRoll() {
+    setPendingPayoff(null);
   }
 
   function handleDeleteBill(p: Payment) {
@@ -743,15 +781,16 @@ export default function Debt() {
                             {`$${d.total?.toFixed(0) ?? ""}`}
                           </MyText>
                         </View>
+                        {cannotPayOff && (
+                          <MyText className="mt-4 text-my-white-dark bg-my-black-dark/80 rounded-md text-center p-2">
+                            <Entypo name="warning" className="mr-4" size={20} />
+                            {"  "}
+                            Payoff cannot be calculated for {d.name}. Your
+                            minimum payment may be too low to cover interest –
+                            try increasing the payment amount.
+                          </MyText>
+                        )}
                       </View>
-                      {cannotPayOff && (
-                        <MyText className="text-my-red-light bg-my-black-dark/80 text-center p-2">
-                          <Entypo name="warning" size={20} />
-                          Payoff cannot be calculated. Your minimum payment may
-                          be too low to cover interest – try increasing the
-                          payment amount.
-                        </MyText>
-                      )}
                     </Pressable>
                   );
                 })}
@@ -782,10 +821,14 @@ export default function Debt() {
           </View>
         )}
       </ScrollView>
-      {paidOffDebtName && (
+      {pendingPayoff && (
         <CongratsPaidOffModal
-          debtName={paidOffDebtName}
-          onClose={() => setPaidOffDebtName(null)}
+          debtName={pendingPayoff.paidOffPayment.name}
+          freedUpAmount={pendingPayoff.paidOffPayment.amount ?? 0}
+          candidates={payoffCandidates}
+          defaultTargetId={payoffCandidates[0]?.id ?? null}
+          onRoll={handleRollSnowball}
+          onDecline={handleDeclinePayoffRoll}
         />
       )}
     </View>

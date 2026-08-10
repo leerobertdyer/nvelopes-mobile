@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Interval, ViewContent, type Nvelope, type Payment } from "../types";
+import { ViewContent, type Nvelope, type Payment } from "../types";
 import {
+  addTransaction,
   editDatabaseWithTransaction,
   editEnvelopes,
   editPayments,
@@ -13,9 +14,11 @@ import firestore from "@react-native-firebase/firestore";
 import {
   createTransactionId,
   deriveIsPaid,
+  getRemainingDebtsForSnowball,
   getVirtualPaymentsForCurrentPeriod,
   randomUUID,
   removeVirtualIdPortion,
+  rollSnowballOnPayoff,
 } from "../util/util";
 import Loading from "./Loading";
 import { startOfDay, addMonths } from "date-fns";
@@ -42,6 +45,7 @@ import {
   getOriginalIdFromVirtualId,
   togglePaidDates,
 } from "../util/paymentUtils";
+import { SNOWBALL_PAYMENT_ID } from "../constants";
 import NvelopesContainer from "./Nvelopes/NvelopesContainer";
 import MainEnvelope from "./Nvelopes/MainNvelope";
 import { DraxProvider } from "react-native-drax";
@@ -86,7 +90,10 @@ export default function MainView() {
   const [dismissedDuePayments, setDismissedDuePayments] = useState<Set<string>>(
     new Set(),
   );
-  const [paidOffDebtName, setPaidOffDebtName] = useState<string | null>(null);
+  const [pendingPayoff, setPendingPayoff] = useState<{
+    paidOffPayment: Payment;
+    paymentsAtPayoff: Payment[];
+  } | null>(null);
   const [content, setContent] = useState<ViewContent>("NVELOPES");
 
   // Only ever show current pay period's payments (derived, never full list)
@@ -208,7 +215,7 @@ export default function MainView() {
   async function applySnowballToTarget(virtualPayment: Payment) {
     if (!snowballTargetPaymentId || !activeBudgetId || !user) return;
 
-    const snowballPayment = payments.find((p) => p.id === "SNOWBALL");
+    const snowballPayment = payments.find((p) => p.id === SNOWBALL_PAYMENT_ID);
     const targetDebt = payments.find((p) => p.id === snowballTargetPaymentId);
     if (!snowballPayment || !targetDebt) return;
 
@@ -223,7 +230,7 @@ export default function MainView() {
     );
 
     let updatedPayments: Payment[] = payments.map((p) => {
-      if (p.id === "SNOWBALL") return updatedSnowball;
+      if (p.id === SNOWBALL_PAYMENT_ID) return updatedSnowball;
       if (p.id === snowballTargetPaymentId) return updatedTarget;
       return p;
     });
@@ -251,64 +258,28 @@ export default function MainView() {
     });
   }
 
+  // Persists the payoff itself (debt already zeroed in updatedPayments) and, if
+  // there's a remainder, returns it to the budget. Does NOT touch the snowball -
+  // that's deferred to the Congrats modal, so the user can choose to roll it and
+  // pick the next target instead of it happening silently.
   async function handleDebtPayoff(
     paidOffPayment: Payment,
     updatedPayments: Payment[],
     remainder: number = 0,
   ): Promise<Payment[]> {
-    if (!user) return [];
-    setPaidOffDebtName(paidOffPayment.name);
+    if (!user || !activeBudgetId) return updatedPayments;
 
-    const remainingDebts = updatedPayments.filter(
-      (p) =>
-        p.type === "DEBT" &&
-        p.id !== "SNOWBALL" &&
-        p.id !== paidOffPayment.id &&
-        p.total != null &&
-        p.total > 0,
-    );
-    const nextDebt =
-      remainingDebts.sort((a, b) => (a.total ?? 0) - (b.total ?? 0))[0] ?? null;
-
-    setSnowballTargetPaymentId(nextDebt.id);
-    await editDatabaseWithTransaction({
-      t: {
+    await addTransaction(
+      {
         id: createTransactionId(user),
         type: "PAID_OFF",
         createdAt: firestore.Timestamp.now(),
         nvelopeOrPaymentId: paidOffPayment.id,
-        description: `Snowball paid off "${paidOffPayment?.name}" Rolling into "${nextDebt?.name}"`,
-        createdBy: user!.email ?? user!.uid,
+        description: `Paid off "${paidOffPayment.name}"`,
+        createdBy: user.email ?? user.uid,
       },
-      budgetId: activeBudgetId!,
-      func: () => editSnowballTargetPaymentId(activeBudgetId!, nextDebt.id),
-    });
-
-    const snowballPayment = updatedPayments.find((p) => p.id === "SNOWBALL");
-    const newSnowballAmount =
-      (snowballPayment?.amount ?? 0) + paidOffPayment.amount;
-
-    let finalPayments: Payment[];
-    if (snowballPayment) {
-      finalPayments = updatedPayments.map((p) =>
-        p.id === "SNOWBALL" ? { ...p, amount: newSnowballAmount } : p,
-      );
-    } else {
-      finalPayments = [
-        ...updatedPayments,
-        {
-          id: "SNOWBALL",
-          name: "❄️Snowball❄️",
-          amount: newSnowballAmount,
-          dueDate: payDate!,
-          interval: "SPLIT" as Interval,
-          recurring: true,
-          paidDates: [],
-          paidAmounts: {},
-          type: "DEBT",
-        } as Payment,
-      ];
-    }
+      activeBudgetId,
+    );
 
     if (remainder > 0) {
       const newBudget = totalSpendingBudget + remainder;
@@ -319,13 +290,14 @@ export default function MainView() {
           type: "SNOWBALL",
           createdAt: firestore.Timestamp.now(),
           nvelopeOrPaymentId: paidOffPayment.id,
-          description: `Snowball exeeded final payment. Applied $${remainder} to available budget`,
-          createdBy: user!.email ?? user!.uid,
+          description: `Snowball exceeded final payment. Applied $${remainder} to available budget`,
+          createdBy: user.email ?? user.uid,
         },
-        budgetId: activeBudgetId!,
-        func: () => editTotalSpendingBudget(newBudget, activeBudgetId!),
+        budgetId: activeBudgetId,
+        func: () => editTotalSpendingBudget(newBudget, activeBudgetId),
       });
     }
+
     Toast.show({
       type: "success",
       text1: `${paidOffPayment.name} paid off!`,
@@ -335,7 +307,46 @@ export default function MainView() {
           : undefined,
     });
 
-    return finalPayments;
+    setPendingPayoff({ paidOffPayment, paymentsAtPayoff: updatedPayments });
+    return updatedPayments;
+  }
+
+  const payoffCandidates = pendingPayoff
+    ? getRemainingDebtsForSnowball(
+        pendingPayoff.paymentsAtPayoff,
+        pendingPayoff.paidOffPayment.id,
+      )
+    : [];
+
+  async function handleRollSnowball(targetId: string) {
+    if (!pendingPayoff || !user || !activeBudgetId) return;
+    const { paidOffPayment, paymentsAtPayoff } = pendingPayoff;
+    const withSnowball = rollSnowballOnPayoff(
+      paymentsAtPayoff,
+      paidOffPayment,
+      payDate,
+    );
+    const nextTarget = withSnowball.find((p) => p.id === targetId);
+    setSnowballTargetPaymentId(targetId);
+    await editDatabaseWithTransaction({
+      t: {
+        id: createTransactionId(user),
+        type: "SNOWBALL",
+        createdAt: firestore.Timestamp.now(),
+        nvelopeOrPaymentId: paidOffPayment.id,
+        description: `Rolled "${paidOffPayment.name}"'s payment into the snowball, targeting "${nextTarget?.name}"`,
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId,
+      func: () => editSnowballTargetPaymentId(activeBudgetId, targetId),
+    });
+    setPayments(withSnowball);
+    await editPayments(withSnowball, activeBudgetId);
+    setPendingPayoff(null);
+  }
+
+  function handleDeclinePayoffRoll() {
+    setPendingPayoff(null);
   }
 
   async function handleUpdatePaid(virtualPayment: Payment) {
@@ -343,7 +354,7 @@ export default function MainView() {
     const originalId = getOriginalIdFromVirtualId(virtualPayment.id);
 
     // Snowball payment routes to its own handler
-    if (originalId === "SNOWBALL") {
+    if (originalId === SNOWBALL_PAYMENT_ID) {
       await applySnowballToTarget(virtualPayment);
       return;
     }
@@ -776,10 +787,14 @@ export default function MainView() {
             handleDeleteBill={handleDeleteBill}
             onPaymentUpdated={setPaymentToEdit}
           />
-          {paidOffDebtName && (
+          {pendingPayoff && (
             <CongratsPaidOffModal
-              debtName={paidOffDebtName}
-              onClose={() => setPaidOffDebtName(null)}
+              debtName={pendingPayoff.paidOffPayment.name}
+              freedUpAmount={pendingPayoff.paidOffPayment.amount ?? 0}
+              candidates={payoffCandidates}
+              defaultTargetId={payoffCandidates[0]?.id ?? null}
+              onRoll={handleRollSnowball}
+              onDecline={handleDeclinePayoffRoll}
             />
           )}
         </>
@@ -931,10 +946,14 @@ export default function MainView() {
           <ContentSelector content={content} setContent={setContent} />
         </View>
       </View>
-      {paidOffDebtName && (
+      {pendingPayoff && (
         <CongratsPaidOffModal
-          debtName={paidOffDebtName}
-          onClose={() => setPaidOffDebtName(null)}
+          debtName={pendingPayoff.paidOffPayment.name}
+          freedUpAmount={pendingPayoff.paidOffPayment.amount ?? 0}
+          candidates={payoffCandidates}
+          defaultTargetId={payoffCandidates[0]?.id ?? null}
+          onRoll={handleRollSnowball}
+          onDecline={handleDeclinePayoffRoll}
         />
       )}
     </>

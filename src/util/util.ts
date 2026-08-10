@@ -1,5 +1,13 @@
 import type { Payment, Interval, IntervalDates } from "../types";
-import { BIWEEKLY, MONTHLY, SPLIT, WEEKLY, YEARLY } from "../constants";
+import {
+  BIWEEKLY,
+  MONTHLY,
+  SNOWBALL_PAYMENT_ID,
+  SNOWBALL_PAYMENT_NAME,
+  SPLIT,
+  WEEKLY,
+  YEARLY,
+} from "../constants";
 import {
   addMonths,
   addWeeks,
@@ -551,34 +559,85 @@ export function calculateSnowballPayoffDate(
 }
 
 /**
- * When a debt is paid off: compute next target (lowest remaining balance),
- * bake (snowball + paid-off amount) into that target's payment amount, and return updated payments.
- * Caller should set snowball to 0 after using this.
+ * Debts eligible to become the next snowball target, sorted lowest balance first.
+ * Excludes the snowball row itself and (optionally) the debt just paid off.
  */
-export function applyPayoffRoll(
+export function getRemainingDebtsForSnowball(
+  payments: Payment[],
+  excludeId?: string,
+): Payment[] {
+  return payments
+    .filter(
+      (p) =>
+        p.type === "DEBT" &&
+        p.id !== SNOWBALL_PAYMENT_ID &&
+        p.id !== excludeId &&
+        p.total != null &&
+        p.total > 0,
+    )
+    .sort((a, b) => (a.total ?? 0) - (b.total ?? 0));
+}
+
+/**
+ * Picks the next snowball target when a debt is paid off: the remaining debt
+ * with the lowest balance, excluding the snowball row itself and the debt just paid off.
+ * Returns null when no debts remain.
+ */
+export function pickNextSnowballTarget(
+  payments: Payment[],
+  paidOffId: string,
+): Payment | null {
+  return getRemainingDebtsForSnowball(payments, paidOffId)[0] ?? null;
+}
+
+/** Sets the SNOWBALL row's amount, creating the row if it doesn't exist yet. */
+function upsertSnowballRow(
+  payments: Payment[],
+  amount: number,
+  payDate: Timestamp | null | undefined,
+): Payment[] {
+  const existing = payments.find((p) => p.id === SNOWBALL_PAYMENT_ID);
+  if (existing) {
+    return payments.map((p) =>
+      p.id === SNOWBALL_PAYMENT_ID ? { ...p, amount } : p,
+    );
+  }
+  const snowballRow: Payment = {
+    id: SNOWBALL_PAYMENT_ID,
+    name: SNOWBALL_PAYMENT_NAME,
+    amount,
+    dueDate: payDate ?? Timestamp.now(),
+    interval: "SPLIT" as Interval,
+    recurring: true,
+    paidDates: [],
+    paidAmounts: {},
+    type: "DEBT",
+  };
+  return [...payments, snowballRow];
+}
+
+/**
+ * Upserts the SNOWBALL payment row, adding the freed-up minimum payment from a
+ * newly paid-off debt. This is the single source of truth for the accumulated
+ * snowball amount (read via getSnowballAmount).
+ */
+export function rollSnowballOnPayoff(
   payments: Payment[],
   paidOffPayment: Payment,
-  snowball: number,
-): { updatedPayments: Payment[]; nextTargetId: string | null } {
-  const paidAmount = paidOffPayment.amount ?? 0;
-  const newSnowball = snowball + paidAmount;
-  const remainingDebts = payments.filter(
-    (p) => p.type === "DEBT" && p.total != null && p.total > 0,
-  );
-  const nextTarget =
-    remainingDebts.length > 0
-      ? remainingDebts.sort((a, b) => (a.total ?? 0) - (b.total ?? 0))[0]
-      : null;
-  const nextId = nextTarget?.id ?? null;
-  const updatedPayments =
-    nextTarget != null
-      ? payments.map((p) =>
-          p.id === nextTarget.id
-            ? { ...p, amount: (p.amount ?? 0) + newSnowball }
-            : p,
-        )
-      : payments;
-  return { updatedPayments, nextTargetId: nextId };
+  payDate: Timestamp | null | undefined,
+): Payment[] {
+  const existing = payments.find((p) => p.id === SNOWBALL_PAYMENT_ID);
+  const newAmount = (existing?.amount ?? 0) + (paidOffPayment.amount ?? 0);
+  return upsertSnowballRow(payments, newAmount, payDate);
+}
+
+/** Manually sets the snowball amount (e.g. from the Debt screen's edit form). */
+export function setSnowballAmount(
+  payments: Payment[],
+  amount: number,
+  payDate: Timestamp | null | undefined,
+): Payment[] {
+  return upsertSnowballRow(payments, amount, payDate);
 }
 
 /**
