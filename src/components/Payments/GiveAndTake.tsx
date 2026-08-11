@@ -89,7 +89,7 @@ export default function GiveAndTake({
             </MyText>
             <View className="flex-row items-start justify-center gap-2 p-4  rounded-md">
               <RadioBtn
-                option={{ id: "give", label: "Another Envelope" }}
+                option={{ id: "give", label: "Another Nvelope" }}
                 onSelect={() => setIsGiving(true)}
                 selected={isGiving === true}
               />
@@ -102,7 +102,7 @@ export default function GiveAndTake({
             {isGiving && (
               <>
                 <MyText className="text-my-white-light">
-                  Enter envelope to give to
+                  Enter nvelope to give to
                 </MyText>
                 <Picker
                   style={{
@@ -121,7 +121,7 @@ export default function GiveAndTake({
                   <Picker.Item
                     enabled={false}
                     value=""
-                    label="Select an envelope"
+                    label="Select a nvelope"
                   />
                   {envelopes.map(
                     (e) =>

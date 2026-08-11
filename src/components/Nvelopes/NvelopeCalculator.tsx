@@ -96,7 +96,7 @@ export default function NvelopeCalculator({
                 onValueChange={(itemValue) => handleSetEnvelope(itemValue)}
               >
                 <Picker.Item
-                  label="Select an envelope"
+                  label="Select a nvelope"
                   enabled={false}
                   value="java"
                 />

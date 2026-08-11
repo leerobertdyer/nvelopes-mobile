@@ -49,7 +49,7 @@ export default function EnvelopeForm(props: IProps) {
             id="newEnvelopeName"
             label="What is your nvelope for?"
             labelColor="text-my-white-light"
-            placeholder="Envelope name"
+            placeholder="Nvelope name"
             value={newEnvelopeName ?? ""}
             onChange={(e) => setNewEnvelopeName(e.toLowerCase())}
           />
@@ -59,7 +59,7 @@ export default function EnvelopeForm(props: IProps) {
                 id="newTotal"
                 label="How much do you want to add?"
                 labelColor="text-my-white-light"
-                placeholder="Envelope Amount"
+                placeholder="Nvelope Amount"
                 value={newEnvelopeTotal}
                 onChange={setNewEnvelopeTotal}
               />

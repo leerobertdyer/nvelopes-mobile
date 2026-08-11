@@ -22,6 +22,7 @@ import firestore from "@react-native-firebase/firestore";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
 import Toast from "react-native-toast-message";
 import NvelopeActionBtns from "../Buttons/NvelopeActionBtns";
+import Loading from "../Loading";
 
 interface IBigEnvelope {
   handleBack: () => void;
@@ -50,6 +51,7 @@ export default function BigEnvelope({
   const [transactions, setTransactions] = useState<NvelopesTransaction[]>([]);
   const [showTransactions, setShowTransactions] = useState(false);
   const [amount, setAmount] = useState(0);
+  const [isSpending, setIsSpending] = useState(false);
 
   useEffect(() => {
     async function getEnvelopeTransactions() {
@@ -81,6 +83,7 @@ export default function BigEnvelope({
     );
     const spendDesc = `${user.email} spent $${amountToSpend} from ${envelope.name}`;
     setEnvelopes(newEnvelopes);
+    setIsSpending(true);
     try {
       await editDatabaseWithTransaction({
         t: {
@@ -101,10 +104,14 @@ export default function BigEnvelope({
         text1: "Failed to save spend, please try again",
       });
       setEnvelopes(envelopes); // roll back optimistic update
+    } finally {
+      setIsSpending(false);
     }
 
     handleBack?.();
   }
+
+  if (isSpending) return <Loading text="Stuffing Nvelope..." />;
 
   if (showTransactions)
     return (

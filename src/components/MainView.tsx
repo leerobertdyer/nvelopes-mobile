@@ -484,7 +484,7 @@ export default function MainView() {
         createdAt: firestore.Timestamp.now(),
         nvelopeOrPaymentId: n.id,
         amount: n.total,
-        description: `Added new envelope ${n.name} with $${n.total}`,
+        description: `Added new nvelope ${n.name} with $${n.total}`,
         createdBy: user.email ?? user.uid,
       },
       budgetId: activeBudgetId!,
@@ -498,7 +498,7 @@ export default function MainView() {
       setTotalSpendingBudget,
     );
     resetState();
-    Toast.show({ type: "success", text1: "Envelope created" });
+    Toast.show({ type: "success", text1: "Nvelope created" });
   }
 
   async function handleSetShowSpendingPage(n: Nvelope) {
@@ -509,7 +509,7 @@ export default function MainView() {
   async function deleteEnvelope() {
     if (!user || !envelopeToEdit) return;
     try {
-      setLoadingText("Deleting Envelope...");
+      setLoadingText("Deleting Nvelope...");
       setShowLoading(true);
       const newEnvelopes = [...envelopes].filter(
         (e) => e.id !== envelopeToEdit.id,
@@ -519,7 +519,7 @@ export default function MainView() {
         t: {
           id: createTransactionId(user),
           type: "DELETE",
-          description: `Deleted envelope ${envelopeToEdit.name}`,
+          description: `Deleted nvelope ${envelopeToEdit.name}`,
           createdAt: firestore.Timestamp.now(),
           createdBy: user.email ?? user.uid,
         },
@@ -527,11 +527,11 @@ export default function MainView() {
         func: () => editEnvelopes(newEnvelopes, activeBudgetId!),
       });
       resetState();
-      Toast.show({ type: "success", text1: "Envelope deleted" });
+      Toast.show({ type: "success", text1: "Nvelope deleted" });
     } catch (error) {
       console.error("Error deleting envelope:", error);
       setShowLoading(false);
-      Toast.show({ type: "error", text1: "Failed to delete envelope" });
+      Toast.show({ type: "error", text1: "Failed to delete nvelope" });
     }
   }
 
@@ -541,7 +541,7 @@ export default function MainView() {
     try {
       const originalEnvelope = envelopes.find((e) => e.id === n.id);
       if (!originalEnvelope) return;
-      setLoadingText("Editing Envelope...");
+      setLoadingText("Editing Nvelope...");
       setShowLoading(true);
       if (originalEnvelope.total > n.total) {
         await updateBudgetStateAndDBB(
@@ -573,11 +573,11 @@ export default function MainView() {
         func: () => editEnvelopes(newEnvelopes, activeBudgetId!),
       });
       resetState();
-      Toast.show({ type: "success", text1: "Envelope updated" });
+      Toast.show({ type: "success", text1: "Nvelope updated" });
     } catch (error) {
       console.error("Error editing envelope:", error);
       setShowLoading(false);
-      Toast.show({ type: "error", text1: "Failed to update envelope" });
+      Toast.show({ type: "error", text1: "Failed to update nvelope" });
     }
   }
 
@@ -591,7 +591,7 @@ export default function MainView() {
     if (!user) return;
     const originalEnvelope = envelopes.find((e) => e.id === n.id);
     if (!originalEnvelope) return;
-    setLoadingText("Editing Envelope...");
+    setLoadingText(isSpending ? "Stuffing Nvelope..." : "Editing Nvelope...");
     setShowLoading(true);
     const newEnvelopes = [...envelopes].map((e) => (e.id === n.id ? n : e));
     setEnvelopes(newEnvelopes);
@@ -672,7 +672,7 @@ export default function MainView() {
       budgetId: activeBudgetId!,
       func: () => editPayments(paymentsMarkedPaid, activeBudgetId!),
     });
-    Toast.show({ type: "success", text1: "Envelopes and Payments reset" });
+    Toast.show({ type: "success", text1: "Nvelopes and Payments reset" });
   }
 
   async function addCashToDb() {
@@ -905,7 +905,7 @@ export default function MainView() {
       //   className="items-center gap-2"
       >
         <Text>You have nothing left in your budget!</Text>
-        <Text>Try moving some money from another envelope</Text>
+        <Text>Try moving some money from another nvelope</Text>
         <Button
           title="Go Back"
           onPress={() => setShowBudgetWarning(false)}

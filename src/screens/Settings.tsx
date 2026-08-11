@@ -524,7 +524,7 @@ export default function Settings() {
           ⚠️ Revert To A Backup
         </MyText>
         <MyText className="text-xs text-my-white-base">
-          Restores payments and envelopes
+          Restores payments and nvelopes
         </MyText>
         <View className="w-full">
           {isLoadingSafeBackups ? (
@@ -583,7 +583,7 @@ export default function Settings() {
                 .toFixed(2)}
             </MyText>
             <MyText>
-              You will have {selectedSafeBackup.nvelopes?.length ?? 0} envelopes
+              You will have {selectedSafeBackup.nvelopes?.length ?? 0} nvelopes
               totaling $
               {(selectedSafeBackup.nvelopes ?? [])
                 .reduce((acc, p) => p.total + acc, 0)
@@ -609,7 +609,7 @@ export default function Settings() {
           Saved: {new Date(asyncStorageBackup.timestamp).toLocaleString()}
         </MyText>
         <MyText className="text-xs">
-          {asyncStorageBackup.data.envelopes?.length ?? 0} envelopes,{" "}
+          {asyncStorageBackup.data.envelopes?.length ?? 0} nvelopes,{" "}
           {asyncStorageBackup.data.payments?.length ?? 0} payments
         </MyText>
         <Btn color="red" text="Undo" onPress={() => setShowUndoConfirm(true)} />
@@ -707,7 +707,7 @@ export default function Settings() {
               </MyText>
               <MyText className="text-my-white-light mb-2 text-center">
                 This will permanently delete your account and all your data
-                (envelopes, payments, backups).
+                (nvelopes, payments, backups).
               </MyText>
               <MyText className="text-my-red-light text-xl">
                 This cannot be undone.
@@ -970,7 +970,7 @@ export default function Settings() {
                   </MyText>
                   <MyText>
                     You will have{" "}
-                    {asyncStorageBackup.data.envelopes?.length ?? 0} envelopes
+                    {asyncStorageBackup.data.envelopes?.length ?? 0} nvelopes
                   </MyText>
                 </View>
                 <Btn color="gold" text="Confirm" onPress={handleUndoRestore} />
@@ -991,7 +991,7 @@ export default function Settings() {
                         Delete this budget?
                       </MyText>
                       <MyText className="text-my-white-light w-[80%] text-center">
-                        All data (envelopes, payments) will be permanently
+                        All data (nvelopes, payments) will be permanently
                         deleted. All members will lose access.
                         <MyText className="text-my-red-light underline">
                           {" "}

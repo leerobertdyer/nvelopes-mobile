@@ -64,10 +64,10 @@ export default function MainEnvelope({
   const dottedHeight = 80;
   const dottedStrokeWidth = 8;
 
-  function handleEnterAmount(amount: number, n: Nvelope) {
+  async function handleEnterAmount(amount: number, n: Nvelope) {
     if (amount <= 0) return;
     n.spent = Number(n.spent) + amount;
-    editEnvelope?.(n, true, spendingDescription || undefined, amount);
+    await editEnvelope?.(n, true, spendingDescription || undefined, amount);
     handleBack?.();
   }
 
