@@ -32,7 +32,7 @@ import {
 import MoneyInput from "../components/Payments/MoneyInput";
 import { MyText } from "../components/MyText";
 import Btn from "../components/Buttons/Btn";
-import { Pressable, ScrollView, TextInput, View } from "react-native";
+import { Modal, Pressable, ScrollView, TextInput, View } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import {
   getSnowballAmount,
@@ -144,6 +144,9 @@ export default function Debt() {
   const [extraMonthly, setExtraMonthly] = useState(0);
   const [showEditSnowball, setShowEditSnowball] = useState(false);
   const [debtMenuOpen, setDebtMenuOpen] = useState<Payment | null>(null);
+  const [payoffWarningDebtId, setPayoffWarningDebtId] = useState<
+    string | null
+  >(null);
   const [additionalPaymentDebt, setAdditionalPaymentDebt] =
     useState<Payment | null>(null);
   const [additionalPaymentAmount, setAdditionalPaymentAmount] = useState(0);
@@ -846,13 +849,27 @@ export default function Debt() {
                     <Pressable key={d.id} onPress={() => setDebtMenuOpen(d)}>
                       <View className="border-y-2 border-my-white-dark my-2 w-full py-2">
                         <View className="w-full flex-row justify-center gap-12">
-                          <MyText
-                            className={`text-center w-[40%] text-sm ${d.id === effectiveSnowballTargetId ? "text-my-blue-light" : "text-my-white-light"}`}
-                          >
-                            {d.id === effectiveSnowballTargetId
-                              ? `❄️ ${d.name} ❄️`
-                              : d.name}
-                          </MyText>
+                          <View className="w-[40%] flex-row items-center justify-center gap-1">
+                            <MyText
+                              className={`text-center text-sm ${d.id === effectiveSnowballTargetId ? "text-my-blue-light" : "text-my-white-light"}`}
+                            >
+                              {d.id === effectiveSnowballTargetId
+                                ? `❄️ ${d.name} ❄️`
+                                : d.name}
+                            </MyText>
+                            {cannotPayOff && (
+                              <Pressable
+                                onPress={() => setPayoffWarningDebtId(d.id)}
+                                hitSlop={8}
+                              >
+                                <Entypo
+                                  name="warning"
+                                  size={14}
+                                  color="#f87171"
+                                />
+                              </Pressable>
+                            )}
+                          </View>
                           <MyText className="text-center text-my-white-light w-[20%]">
                             {d.interestRate != null
                               ? d.interestRate.toString() + " %"
@@ -862,20 +879,44 @@ export default function Debt() {
                             {`$${d.total?.toFixed(0) ?? ""}`}
                           </MyText>
                         </View>
-                        {cannotPayOff && (
-                          <MyText className="mt-4 text-my-white-dark bg-my-black-dark/80 rounded-md text-center p-2">
-                            <Entypo name="warning" className="mr-4" size={20} />
-                            {"  "}
-                            Payoff cannot be calculated for {d.name}. Your
-                            minimum payment may be too low to cover interest –
-                            try increasing the payment amount.
-                          </MyText>
-                        )}
                       </View>
                     </Pressable>
                   );
                 })}
               </View>
+            );
+          })()}
+
+        {payoffWarningDebtId &&
+          (() => {
+            const warningDebt = debts.find(
+              (d) => d.id === payoffWarningDebtId,
+            );
+            if (!warningDebt) return null;
+            return (
+              <Modal transparent animationType="fade">
+                <Pressable
+                  className="flex-1 bg-my-black-dark/80 items-center justify-center p-4"
+                  onPress={() => setPayoffWarningDebtId(null)}
+                >
+                  <Pressable
+                    className="bg-my-black-base border-2 border-my-red-light rounded-md p-4 max-w-[24rem] items-center gap-2"
+                    onPress={() => {}}
+                  >
+                    <Entypo name="warning" size={28} color="#f87171" />
+                    <MyText className="text-my-white-light text-sm text-center">
+                      Payoff cannot be calculated for "{warningDebt.name}".
+                      Your minimum payment may be too low to cover interest –
+                      try increasing the payment amount.
+                    </MyText>
+                    <Pressable onPress={() => setPayoffWarningDebtId(null)}>
+                      <MyText className="text-my-blue-light underline text-sm mt-2">
+                        Got it
+                      </MyText>
+                    </Pressable>
+                  </Pressable>
+                </Pressable>
+              </Modal>
             );
           })()}
 
