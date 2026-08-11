@@ -117,9 +117,9 @@ export default function PaymentMap({
             </MyText>
             <MyText
               numberOfLines={1}
-              className={`text-sm ${deriveIsPaid(p) && "text-my-black-light"}`}
+              className={`max-w-[9rem] text-sm ${deriveIsPaid(p) && "text-my-black-light"}`}
             >
-              {p.name}
+            {p.name}
             </MyText>
           </View>
 

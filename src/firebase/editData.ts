@@ -10,6 +10,17 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 type Timestamp = FirebaseFirestoreTypes.Timestamp;
 type User = FirebaseAuthTypes.User;
 
+/** True if a Firestore error is a permission-denied, e.g. from a request racing a logout. */
+function isPermissionDeniedError(error: unknown): boolean {
+  const code = (error as { code?: string })?.code;
+  return (
+    code === "firestore/permission-denied" ||
+    code === "permission-denied" ||
+    code === "permission_denied" ||
+    /permission/i.test(String((error as { message?: string })?.message ?? ""))
+  );
+}
+
 export async function addTransaction(t: NvelopesTransaction, budgetId: string) {
   try {
     await firestore()
@@ -212,7 +223,11 @@ export async function shouldBackupUserDataSafe(user: User, budgetId: string) {
     if (backupCount < MAX_BACKUPS) return timeSinceLastBackup > TEN_MINUTES_MS;
     return timeSinceLastBackup > FOUR_HOURS_MS;
   } catch (error) {
-    console.error("Error in shouldBackupUserDataSafe:", error);
+    // Permission-denied here usually just means the user logged out while this
+    // check was in flight - not a real error, so skip the noisy log.
+    if (!isPermissionDeniedError(error)) {
+      console.error("Error in shouldBackupUserDataSafe:", error);
+    }
     return false;
   }
 }
@@ -253,7 +268,11 @@ export async function backupUserDataSafe(user: User, budgetId: string) {
     await backupsCollectionRef.add(backupData);
     await pruneOldBackups(user.uid, 30);
   } catch (error) {
-    console.error("Error in backupUserDataSafe:", error);
+    // Permission-denied here usually just means the user logged out while this
+    // backup was in flight - not a real error, so skip the noisy log.
+    if (!isPermissionDeniedError(error)) {
+      console.error("Error in backupUserDataSafe:", error);
+    }
   }
 }
 

@@ -27,22 +27,32 @@ export default function Home() {
   }, [user?.uid]);
 
   useEffect(() => {
-    if (!isLoadingUser && !isLoadingBudgets && !isLoadingDb) {
+    // No user (e.g. just logged out) means there's nothing left to load - resolve
+    // immediately. Otherwise, since isLoadingUser/isLoadingBudgets/isLoadingDb may
+    // already all be false (no-op updates that React bails out of), this effect
+    // wouldn't re-run after the reset above and isLoading would get stuck on true.
+    if (!user || (!isLoadingUser && !isLoadingBudgets && !isLoadingDb)) {
       setIsLoading(false);
     }
-  }, [isLoadingUser, isLoadingBudgets, isLoadingDb]);
+  }, [user, isLoadingUser, isLoadingBudgets, isLoadingDb]);
 
   // Run backup check for authenticated users with active budget
   useEffect(() => {
     if (!user || !activeBudgetId || documentExists !== true) return;
+    let cancelled = false;
     async function checkAndBackup() {
       const shouldBackup = await shouldBackupUserDataSafe(
         user!,
         activeBudgetId!,
       );
-      if (shouldBackup) await backupUserDataSafe(user!, activeBudgetId!);
+      // Bail if the user logged out (or account/budget changed) while the check was in flight.
+      if (cancelled || shouldBackup !== true) return;
+      await backupUserDataSafe(user!, activeBudgetId!);
     }
     checkAndBackup();
+    return () => {
+      cancelled = true;
+    };
   }, [user, activeBudgetId, documentExists]);
 
   if (isLoading) return <Loading text="Welcome to Nvelopes..." />;
