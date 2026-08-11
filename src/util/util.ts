@@ -640,6 +640,43 @@ export function setSnowballAmount(
   return upsertSnowballRow(payments, amount, payDate);
 }
 
+/** What to do with snowball surplus (payment amount exceeding the target's remaining balance). */
+export type SurplusDisposition = "availableBudget" | "nextTarget" | "none";
+
+export interface PayoffSurplusResult {
+  payments: Payment[];
+  /** Amount actually applied to the target's balance. */
+  applied: number;
+  /** Amount still unapplied, e.g. because the target itself got paid off. */
+  leftover: number;
+  /** The target payment, if applying the surplus paid it off (for cascading the payoff modal). */
+  paidOff: Payment | null;
+}
+
+export function applyPayoffSurplusToTarget(
+  payments: Payment[],
+  targetId: string,
+  remainder: number,
+): PayoffSurplusResult {
+  const target = payments.find((p) => p.id === targetId);
+  if (!target || remainder <= 0) {
+    return { payments, applied: 0, leftover: Math.max(0, remainder), paidOff: null };
+  }
+  const currentTotal = target.total ?? 0;
+  const applied = Math.min(currentTotal, remainder);
+  const newTotal = Math.max(0, currentTotal - applied);
+  const updatedTarget = { ...target, total: newTotal };
+  const updatedPayments = payments.map((p) =>
+    p.id === targetId ? updatedTarget : p,
+  );
+  return {
+    payments: updatedPayments,
+    applied,
+    leftover: remainder - applied,
+    paidOff: newTotal <= 0 ? updatedTarget : null,
+  };
+}
+
 /**
  * Removes undefined values from an object.
  * Firebase doesn't accept undefined values, so this cleans objects before saving.

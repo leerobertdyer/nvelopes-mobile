@@ -12,6 +12,7 @@ import {
 } from "../firebase/editData";
 import firestore from "@react-native-firebase/firestore";
 import {
+  applyPayoffSurplusToTarget,
   createTransactionId,
   deriveIsPaid,
   getRemainingDebtsForSnowball,
@@ -19,6 +20,7 @@ import {
   randomUUID,
   removeVirtualIdPortion,
   rollSnowballOnPayoff,
+  type SurplusDisposition,
 } from "../util/util";
 import Loading from "./Loading";
 import { startOfDay, addMonths } from "date-fns";
@@ -93,6 +95,8 @@ export default function MainView() {
   const [pendingPayoff, setPendingPayoff] = useState<{
     paidOffPayment: Payment;
     paymentsAtPayoff: Payment[];
+    /** Amount the payment exceeded the debt's remaining balance by, still awaiting a disposition. */
+    remainder: number;
   } | null>(null);
   const [content, setContent] = useState<ViewContent>("NVELOPES");
 
@@ -258,10 +262,10 @@ export default function MainView() {
     });
   }
 
-  // Persists the payoff itself (debt already zeroed in updatedPayments) and, if
-  // there's a remainder, returns it to the budget. Does NOT touch the snowball -
-  // that's deferred to the Congrats modal, so the user can choose to roll it and
-  // pick the next target instead of it happening silently.
+  // Persists the payoff itself (debt already zeroed in updatedPayments). Does NOT touch
+  // the snowball or any remainder - both are deferred to the Congrats modal, so the user
+  // can choose whether to roll, which debt to target next, and what to do with any
+  // leftover from an overpayment instead of it happening silently.
   async function handleDebtPayoff(
     paidOffPayment: Payment,
     updatedPayments: Payment[],
@@ -281,33 +285,12 @@ export default function MainView() {
       activeBudgetId,
     );
 
-    if (remainder > 0) {
-      const newBudget = totalSpendingBudget + remainder;
-      setTotalSpendingBudget(newBudget);
-      await editDatabaseWithTransaction({
-        t: {
-          id: createTransactionId(user),
-          type: "SNOWBALL",
-          createdAt: firestore.Timestamp.now(),
-          nvelopeOrPaymentId: paidOffPayment.id,
-          description: `Snowball exceeded final payment. Applied $${remainder} to available budget`,
-          createdBy: user.email ?? user.uid,
-        },
-        budgetId: activeBudgetId,
-        func: () => editTotalSpendingBudget(newBudget, activeBudgetId),
-      });
-    }
-
     Toast.show({
       type: "success",
       text1: `${paidOffPayment.name} paid off!`,
-      text2:
-        remainder > 0
-          ? `$${remainder.toFixed(2)} returned to budget`
-          : undefined,
     });
 
-    setPendingPayoff({ paidOffPayment, paymentsAtPayoff: updatedPayments });
+    setPendingPayoff({ paidOffPayment, paymentsAtPayoff: updatedPayments, remainder });
     return updatedPayments;
   }
 
@@ -318,31 +301,105 @@ export default function MainView() {
       )
     : [];
 
-  async function handleRollSnowball(targetId: string) {
+  async function handleConfirmPayoff(choice: {
+    roll: boolean;
+    targetId: string | null;
+    surplus: SurplusDisposition;
+  }) {
     if (!pendingPayoff || !user || !activeBudgetId) return;
-    const { paidOffPayment, paymentsAtPayoff } = pendingPayoff;
-    const withSnowball = rollSnowballOnPayoff(
-      paymentsAtPayoff,
-      paidOffPayment,
-      payDate,
-    );
-    const nextTarget = withSnowball.find((p) => p.id === targetId);
-    setSnowballTargetPaymentId(targetId);
-    await editDatabaseWithTransaction({
-      t: {
-        id: createTransactionId(user),
-        type: "SNOWBALL",
-        createdAt: firestore.Timestamp.now(),
-        nvelopeOrPaymentId: paidOffPayment.id,
-        description: `Rolled "${paidOffPayment.name}"'s payment into the snowball, targeting "${nextTarget?.name}"`,
-        createdBy: user.email ?? user.uid,
-      },
-      budgetId: activeBudgetId,
-      func: () => editSnowballTargetPaymentId(activeBudgetId, targetId),
-    });
-    setPayments(withSnowball);
-    await editPayments(withSnowball, activeBudgetId);
-    setPendingPayoff(null);
+    const { paidOffPayment, paymentsAtPayoff, remainder } = pendingPayoff;
+    const { roll, targetId, surplus } = choice;
+
+    let workingPayments = paymentsAtPayoff;
+
+    if (roll && targetId) {
+      workingPayments = rollSnowballOnPayoff(
+        workingPayments,
+        paidOffPayment,
+        payDate,
+      );
+      const nextTarget = workingPayments.find((p) => p.id === targetId);
+      setSnowballTargetPaymentId(targetId);
+      await addTransaction(
+        {
+          id: createTransactionId(user),
+          type: "SNOWBALL",
+          createdAt: firestore.Timestamp.now(),
+          nvelopeOrPaymentId: paidOffPayment.id,
+          description: `Rolled "${paidOffPayment.name}"'s payment into the snowball, targeting "${nextTarget?.name}"`,
+          createdBy: user.email ?? user.uid,
+        },
+        activeBudgetId,
+      );
+      await editSnowballTargetPaymentId(activeBudgetId, targetId);
+    }
+
+    let cascadePayoff: typeof pendingPayoff | null = null;
+
+    if (remainder > 0 && surplus === "availableBudget") {
+      const newBudget = totalSpendingBudget + remainder;
+      setTotalSpendingBudget(newBudget);
+      await addTransaction(
+        {
+          id: createTransactionId(user),
+          type: "SNOWBALL",
+          createdAt: firestore.Timestamp.now(),
+          nvelopeOrPaymentId: paidOffPayment.id,
+          description: `Snowball exceeded final payment. Applied $${remainder.toFixed(2)} to available budget`,
+          createdBy: user.email ?? user.uid,
+        },
+        activeBudgetId,
+      );
+      await editTotalSpendingBudget(newBudget, activeBudgetId);
+      Toast.show({
+        type: "success",
+        text1: `$${remainder.toFixed(2)} returned to budget`,
+      });
+    } else if (remainder > 0 && surplus === "nextTarget" && targetId) {
+      const result = applyPayoffSurplusToTarget(
+        workingPayments,
+        targetId,
+        remainder,
+      );
+      workingPayments = result.payments;
+      await addTransaction(
+        {
+          id: createTransactionId(user),
+          type: "EXTRA",
+          createdAt: firestore.Timestamp.now(),
+          nvelopeOrPaymentId: targetId,
+          description: `Applied $${result.applied.toFixed(2)} snowball surplus to "${paymentsAtPayoff.find((p) => p.id === targetId)?.name}"`,
+          createdBy: user.email ?? user.uid,
+        },
+        activeBudgetId,
+      );
+      Toast.show({
+        type: "success",
+        text1: `$${result.applied.toFixed(2)} applied to next target`,
+      });
+      if (result.paidOff) {
+        await addTransaction(
+          {
+            id: createTransactionId(user),
+            type: "PAID_OFF",
+            createdAt: firestore.Timestamp.now(),
+            nvelopeOrPaymentId: result.paidOff.id,
+            description: `Paid off "${result.paidOff.name}"`,
+            createdBy: user.email ?? user.uid,
+          },
+          activeBudgetId,
+        );
+        cascadePayoff = {
+          paidOffPayment: result.paidOff,
+          paymentsAtPayoff: workingPayments,
+          remainder: result.leftover,
+        };
+      }
+    }
+
+    setPayments(workingPayments);
+    await editPayments(workingPayments, activeBudgetId);
+    setPendingPayoff(cascadePayoff);
   }
 
   function handleDeclinePayoffRoll() {
@@ -789,11 +846,15 @@ export default function MainView() {
           />
           {pendingPayoff && (
             <CongratsPaidOffModal
+              // Remount on each payoff (including cascades) so the roll/target/surplus
+              // choices don't carry stale state from the previous debt.
+              key={pendingPayoff.paidOffPayment.id}
               debtName={pendingPayoff.paidOffPayment.name}
               freedUpAmount={pendingPayoff.paidOffPayment.amount ?? 0}
+              remainder={pendingPayoff.remainder}
               candidates={payoffCandidates}
               defaultTargetId={payoffCandidates[0]?.id ?? null}
-              onRoll={handleRollSnowball}
+              onConfirm={handleConfirmPayoff}
               onDecline={handleDeclinePayoffRoll}
             />
           )}
@@ -948,11 +1009,15 @@ export default function MainView() {
       </View>
       {pendingPayoff && (
         <CongratsPaidOffModal
+          // Remount on each payoff (including cascades) so the roll/target/surplus
+          // choices don't carry stale state from the previous debt.
+          key={pendingPayoff.paidOffPayment.id}
           debtName={pendingPayoff.paidOffPayment.name}
           freedUpAmount={pendingPayoff.paidOffPayment.amount ?? 0}
+          remainder={pendingPayoff.remainder}
           candidates={payoffCandidates}
           defaultTargetId={payoffCandidates[0]?.id ?? null}
-          onRoll={handleRollSnowball}
+          onConfirm={handleConfirmPayoff}
           onDecline={handleDeclinePayoffRoll}
         />
       )}
