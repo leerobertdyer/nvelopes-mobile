@@ -25,7 +25,7 @@ export default {
     },
     ios: {
       associatedDomains: ["applinks:invite.nvelopes.app"],
-      supportsTablet: true,
+      supportsTablet: false,
       buildReactNativeFromSource: true,
       usesAppleSignIn: true,
       bundleIdentifier: IS_DEV ? "com.ldyer.nvelopes.dev" : "com.ldyer.nvelopes",
