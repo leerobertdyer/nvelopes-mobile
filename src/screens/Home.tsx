@@ -27,11 +27,11 @@ export default function Home() {
   }, [user?.uid]);
 
   useEffect(() => {
-    // No user (e.g. just logged out) means there's nothing left to load - resolve
-    // immediately. Otherwise, since isLoadingUser/isLoadingBudgets/isLoadingDb may
-    // already all be false (no-op updates that React bails out of), this effect
-    // wouldn't re-run after the reset above and isLoading would get stuck on true.
-    if (!user || (!isLoadingUser && !isLoadingBudgets && !isLoadingDb)) {
+    // Wait for auth to finish before treating null user as logged-out. Once auth is
+    // settled, no user means logout (clear immediately); signed-in waits for budgets/db.
+    // Budgets/db may already be false from a prior session (React no-op), so user is
+    // in the deps so logout/account-switch still re-runs this after the reset above.
+    if (!isLoadingUser && (!user || (!isLoadingBudgets && !isLoadingDb))) {
       setIsLoading(false);
     }
   }, [user, isLoadingUser, isLoadingBudgets, isLoadingDb]);
