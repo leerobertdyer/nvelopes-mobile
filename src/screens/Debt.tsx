@@ -269,6 +269,7 @@ export default function Debt() {
       budgetId: activeBudgetId,
       func: () => editPayments(newPayments, activeBudgetId),
     });
+    setShowEditSnowball(false)
   }
 
   async function saveDebtInformation(d: Payment) {
@@ -662,8 +663,8 @@ export default function Debt() {
         className="w-full h-full my-0 py-[3rem] bg-my-blue-dark"
       >
         <View className="bg-my-black-base/40 p-2 rounded-md w-[80%] mb-[1rem] items-center gap-2">
-          <MyText className="text-my-white-dark">TOTAL DEBT</MyText>
-          <MyText className="text-my-red-dark mb-[.75rem] bg-my-white-dark px-2 rounded-md">
+          <MyText className="text-my-white-dark text-xl">TOTAL DEBT</MyText>
+          <MyText className="text-my-red-dark mb-[.75rem] bg-my-white-dark p-2 rounded-md">
             ${remainingDebt.toFixed(2)}
           </MyText>
           <MyText className="text-my-blue-base">

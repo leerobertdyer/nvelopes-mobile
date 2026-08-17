@@ -138,11 +138,22 @@ export default function BigEnvelope({
           </View>
           <View className="w-full items-center justify-start gap-4">
             <View className="w-[24rem] items-center justify-center gap-2 bg-my-blue-dark/80 p-8 rounded-md">
-              <MyText
-                className={`${envelopeRemainder - amount < 0 ? "text-my-red-dark" : "text-my-white-light"} text-center text-s`}
-              >
-                Remaining: ${(envelopeRemainder - amount).toFixed(2)}
-              </MyText>
+              <View className="items-center gap-2 w-[10rem] justify-between">
+                <View className="w-full justify-between flex-row itmes-center">
+                  <MyText className="text-my-white-light">Total: </MyText>
+                  <MyText className="text-my-white-light">
+                    {envelopeRemainder.toFixed(2)}
+                  </MyText>
+                </View>
+                <View className="w-full justify-between flex-row itmes-center">
+                  <MyText className="text-my-white-light">Remainder: </MyText>
+                  <MyText
+                    className={`${envelopeRemainder - amount < 0 ? "text-my-red-dark" : "text-my-white-light"} text-center text-s`}
+                  >
+                    {(envelopeRemainder - amount).toFixed(2)}
+                  </MyText>
+                </View>
+              </View>
               {envelope.total - envelope.spent > 0 ? (
                 <>
                   <View className="w-full justify-between p-2 flex-row items-center gap-4">

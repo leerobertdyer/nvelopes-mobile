@@ -64,33 +64,33 @@ export default function Header({ links }: { links: string[] }) {
     );
 
   return (
-    <>
-      <View className="flex-row items-center justify-around gap-8 w-screen">
-        <View className="w-1/3 items-center">
+    <View className="w-full">
+      <View className="flex-row items-end justify-around gap-8 w-screen px-6">
+        <View
+          className={`w-1/3 h-14 items-center justify-center border-2 border-my-white-light rounded-md ${daysTillReset > 3 ? "bg-my-red-dark" : "bg-my-green-dark"}`}
+        >
           <MyText
-            className={`text-xl rounded-md text-my-white-light py-[.3rem] px-3 font-bold border-2 border-my-white-light w-fit
-            ${daysTillReset > 3 ? "bg-my-red-dark" : "bg-my-green-dark"}`}
+            className={`text-xl text-my-white-light py-[.3rem] px-3 font-bold  text-center
+              `}
           >
-            {daysTillReset} days
+            {daysTillReset}{" "}
+            {daysTillReset > 1 ? "days" : daysTillReset === 1 ? "day" : "days"}
           </MyText>
         </View>
-        <View className="w-1/3 items-start">
+        <View
+          className={`rounded-md border-2 border-my-white-light w-1/3 h-14 justify-center
+            ${totalSpendingBudget < 0 ? "bg-my-red-dark" : totalSpendingBudget === 0 ? "bg-my-black-light" : "bg-my-green-dark"}`}
+        >
           <MyText
             onPress={() => setShowEditSpendingBudget(true)}
-            className={`text-xl rounded-md text-my-white-light py-[.3rem] px-3 font-bold border-2 border-my-white-light w-fit
-            ${totalSpendingBudget < 0 ? "bg-my-red-dark" : totalSpendingBudget === 0 ? "bg-my-black-dark" : "bg-my-green-dark"}`}
+            className={`text-xl text-my-white-light py-[.3rem] px-3 font-bold text-center
+              `}
           >
             ${totalSpendingBudget.toFixed(2)}
           </MyText>
         </View>
-        <View className="w-1/3 items-start">
-          <NavMenu
-            showMenu={showMenu}
-            setShowMenu={setShowMenu}
-            links={links}
-          />
-        </View>
+        <NavMenu showMenu={showMenu} setShowMenu={setShowMenu} links={links} />
       </View>
-    </>
+    </View>
   );
 }

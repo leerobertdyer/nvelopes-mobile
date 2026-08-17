@@ -824,7 +824,7 @@ export default function Settings() {
                     </View>
                   )}
 
-                {isOwner ? (
+                {isOwner && (
                   <Btn
                     text="Edit Budget"
                     color="red"
@@ -832,10 +832,6 @@ export default function Settings() {
                       setShowEditBudgetModal(true);
                     }}
                   />
-                ) : (
-                  <MyText className="text-my-black-dark font-medium">
-                    {budgetMeta.name}
-                  </MyText>
                 )}
               </View>
             </>
@@ -942,7 +938,9 @@ export default function Settings() {
         </View>
       )}
       <View className="items-center justify-start py-4  bg-my-white-base mt-[3rem] ">
-        {content === "ACCOUNT" && <LogoutButton user={user!} onPress={handleLogOut} />}
+        {content === "ACCOUNT" && (
+          <LogoutButton user={user!} onPress={handleLogOut} />
+        )}
 
         {content === "BUDGET" && (
           <>
@@ -1021,33 +1019,37 @@ export default function Settings() {
             )}
 
             {showLeaveBudgetConfirm && (
-              <View className="bg-my-black-dark">
-                <View className="text-center">
-                  <MyText className="text-xl text-my-red-light mb-2">
-                    Leave this budget?
-                  </MyText>
-                  <MyText className="text-my-white-light">
-                    You will no longer see or edit this budget. Your data
-                    elsewhere is unaffected.
-                  </MyText>
-                  {isLeavingBudget && (
-                    <MyText className="text-my-white-dark text-sm mt-4">
-                      Leaving…
-                    </MyText>
-                  )}
+              <Modal>
+                <View className="bg-my-black-dark w-full h-screen justify-center items-center">
+                  <View className="bg-my-black-dark w-full h-fit gap-4 items-center">
+                    <View className="w-full">
+                      <MyText className="text-xl text-my-red-light mb-2 w-full text-center">
+                        Leave this budget?
+                      </MyText>
+                      <MyText className="text-my-white-light text-center w-full">
+                        You will no longer see or edit this budget. Your data
+                        elsewhere is unaffected.
+                      </MyText>
+                      {isLeavingBudget && (
+                        <MyText className="text-my-white-dark text-sm mt-4">
+                          Leaving…
+                        </MyText>
+                      )}
+                    </View>
+                    <Btn
+                      color="red"
+                      text="Leave Budget"
+                      disabled={isLeavingBudget}
+                      onPress={handleLeaveBudgetConfirm}
+                    />
+                    <Btn
+                      color="red"
+                      text="Cancel"
+                      onPress={() => setShowLeaveBudgetConfirm(false)}
+                    />
+                  </View>
                 </View>
-                <Btn
-                  color="red"
-                  text="Leave Budget"
-                  disabled={isLeavingBudget}
-                  onPress={handleLeaveBudgetConfirm}
-                />
-                <Btn
-                  color="red"
-                  text="Cancel"
-                  onPress={() => setShowLeaveBudgetConfirm(false)}
-                />
-              </View>
+              </Modal>
             )}
 
             {memberToRemove && (

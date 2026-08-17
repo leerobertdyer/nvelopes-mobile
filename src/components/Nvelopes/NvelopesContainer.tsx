@@ -95,6 +95,7 @@ export default function Nvelopes({
 
   async function takeAndGive(envelope: Nvelope, amount: number) {
     if (!envelope || !envelopeToEdit || !user) return;
+
     envelope.total += amount;
     envelopeToEdit.total -= amount;
     const newEnvelopes = [...envelopes];
@@ -104,6 +105,7 @@ export default function Nvelopes({
       (e) => e.id === envelopeToEdit.id,
     );
     newEnvelopes[envelopeToEditIndex] = envelopeToEdit;
+
     await editDatabaseWithTransaction({
       t: {
         id: createTransactionId(user),

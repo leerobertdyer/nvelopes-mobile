@@ -9,8 +9,8 @@ export default function LoginOptions() {
     <View className="w-full p-4 bg-my-black-base justify-start items-center gap-6">
       <ScrollView contentContainerClassName="gap-6">
         <LoginProvider src={googleIcon} text="Sign in with Google" />
-        <AppleSignInButton />
         <LoginForm />
+        <AppleSignInButton />
       </ScrollView>
     </View>
   );

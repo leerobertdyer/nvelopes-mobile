@@ -11,9 +11,10 @@ interface IProps {
 }
 
 export default function EditSpendingBudget({ handleBack }: IProps) {
-  const [cashAmount, setCashAmount] = useState(0);
+  const { totalSpendingBudget, setTotalSpendingBudget } = useDatabase();
   const { activeBudgetId } = useBudget();
-  const { setTotalSpendingBudget } = useDatabase();
+
+  const [cashAmount, setCashAmount] = useState(totalSpendingBudget);
 
   function resetState() {
     setCashAmount(0);
@@ -25,9 +26,8 @@ export default function EditSpendingBudget({ handleBack }: IProps) {
     await editTotalSpendingBudget(cashAmount, activeBudgetId);
     setTotalSpendingBudget(cashAmount);
     handleBack();
-  } 
+  }
 
-  //onSave={manuallySetBudgetInDB} onClose={resetState}
   return (
     <Modal>
       <View className="w-full h-full items-center justify-center gap-2  bg-my-black-base">

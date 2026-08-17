@@ -45,12 +45,19 @@ export default function GiveAndTake({
                   {envelope.name}
                 </MyText>
                 <MyText className="text-my-white-light text-sm">
-                  : $
-                  {(
-                    envelope.total -
-                    envelope.spent -
-                    amountToGiveOrTake
-                  ).toFixed(2)}
+                  :{" "}
+                  <MyText className="text-xs">
+                    $
+                    {(
+                      envelope.total -
+                      envelope.spent -
+                      amountToGiveOrTake
+                    ).toFixed(2)}
+                  </MyText>
+                  /
+                  <MyText className="text-my-green-light text-xs">
+                    {envelope.total.toFixed(2)}
+                  </MyText>
                 </MyText>
               </View>
               <View className="flex-row justify-around items-center">
@@ -64,13 +71,25 @@ export default function GiveAndTake({
                 </MyText>
                 <MyText className="text-my-white-light text-sm">
                   : $
-                  {isGiving && envelopeToGiveTo
-                    ? (
-                        envelopeToGiveTo.total -
-                        envelopeToGiveTo.spent +
-                        amountToGiveOrTake
-                      ).toFixed(2)
-                    : (totalSpendingBudget + amountToGiveOrTake).toFixed(2)}
+                  {isGiving && envelopeToGiveTo ? (
+                    <>
+                      <MyText className="text-xs">
+                        {envelopeToGiveTo.total.toFixed(2)}
+                      </MyText>
+                      /
+                      <MyText className="text-xs text-my-green-light">
+                        {(
+                          envelopeToGiveTo.total -
+                          envelopeToGiveTo.spent +
+                          amountToGiveOrTake
+                        ).toFixed(2)}
+                      </MyText>
+                    </>
+                  ) : (
+                    <MyText className="text-xs text-my-green-light">
+                      {(totalSpendingBudget + amountToGiveOrTake).toFixed(2)}
+                    </MyText>
+                  )}
                 </MyText>
               </View>
             </View>
@@ -133,13 +152,22 @@ export default function GiveAndTake({
               </>
             )}
             {isGiving && envelopeToGiveTo !== null ? (
-              <Btn
-                onPress={() =>
-                  takeAndGive(envelopeToGiveTo, amountToGiveOrTake)
-                }
-                color="green"
-                text="Give"
-              />
+              <>
+                <Btn
+                  onPress={() =>
+                    takeAndGive(envelopeToGiveTo, amountToGiveOrTake)
+                  }
+                  color="green"
+                  text="Give"
+                />
+                <Btn
+                  onPress={() =>
+                    takeAndGive(envelopeToGiveTo, envelope.total - envelope.spent)
+                  }
+                  color="gold"
+                  text="Give All"
+                />
+              </>
             ) : (
               !isGiving && (
                 <>

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, TextInput, View } from "react-native";
 import { MyText } from "../MyText";
 import {
@@ -27,26 +27,50 @@ export default function MoneyInput({
   labelColor,
   placeholder = "0.00",
   allowNegative = false,
-  w = "w-[90%]"
+  w = "w-[90%]",
 }: MoneyInputProps) {
   const inputRef = useRef<TextInput>(null);
   const cents = dollarsToCents(value);
   const displayStr = formatCentsForDisplay(cents);
-  const [isNegative, setIsNegative] = useState(false);
+  const [isNegative, setIsNegative] = useState(cents < 0);
+
+  useEffect(() => {
+    if (cents !== 0) setIsNegative(cents < 0);
+  }, [cents]);
+
+  function applySign(negative: boolean, text: string) {
+    const digits = text.replace(/[^0-9]/g, "");
+    if (digits === "") {
+      onChange(0);
+      return;
+    }
+    const newCents = Math.min(parseInt(digits, 10), MAX_CENTS);
+    onChange(negative ? -centsToDollars(newCents) : centsToDollars(newCents));
+  }
 
   function handleChangeText(text: string) {
-    const digitsOnly = text.replace(/[^0-9]/g, "");
-
-    if (digitsOnly === "") {
-      onChange(0);
-      return
-    }
-
-    const newCents = parseInt(digitsOnly, 10);
-    if (newCents > MAX_CENTS) return;
-    const dollars = centsToDollars(newCents);
-    onChange(isNegative ? -dollars : dollars);
+    applySign(isNegative, text);
   }
+
+  function toggleSign() {
+    const next = !isNegative;
+    setIsNegative(next);
+    applySign(next, displayStr); // re-run current digits under the new sign
+  }
+
+  // function handleChangeText(text: string) {
+  //   const digitsOnly = text.replace(/[^0-9]/g, "");
+
+  //   if (digitsOnly === "") {
+  //     onChange(0);
+  //     return;
+  //   }
+
+  //   const newCents = parseInt(digitsOnly, 10);
+  //   if (newCents > MAX_CENTS) return;
+  //   const dollars = centsToDollars(newCents);
+  //   onChange(isNegative ? -dollars : dollars);
+  // }
 
   return (
     <View className={`${w} m-auto gap-2 items-center justify-center`}>
@@ -72,7 +96,9 @@ export default function MoneyInput({
             className="bg-my-white-light border-2 border-my-white-dark rounded-md p-2 w-full max-w-[20rem] text-my-black-dark text-center"
           />
           <Pressable
-            onPress={() => setIsNegative(!isNegative)}
+            onPress={() => {
+             toggleSign()
+            }}
             className="bg-my-white-dark rounded-md w-[1.75rem] h-[1.75rem] justify-center items-center"
           >
             <MyText className="text-center text-my-black-dark">
@@ -92,5 +118,5 @@ export default function MoneyInput({
         />
       )}
     </View>
-  )
+  );
 }
