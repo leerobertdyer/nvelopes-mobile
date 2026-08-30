@@ -121,12 +121,6 @@ export default function PaymentForm({
     }
   }
 
-  function resetForm() {
-    setNewPayment(generateFreshPayment());
-    setSelectedPaymentType(null);
-    setSplitBillAcrossPayPeriods(false);
-  }
-
   function handleSetNewInterval(i: Interval) {
     setNewPayment({
       ...newPayment,
@@ -161,7 +155,7 @@ export default function PaymentForm({
       return updatedPayments;
     });
 
-    resetForm();
+    handleBack();
     Toast.show({ type: "success", text1: "Payment updated" });
   }
 
@@ -184,18 +178,12 @@ export default function PaymentForm({
     if (!activeBudgetId) return;
     await editPayments(updatedPayments, activeBudgetId);
     Toast.show({ type: "success", text1: "Payment added" });
-    resetForm();
+    handleBack();
   }
 
   async function handleSavePayment() {
     if (paymentToEdit) await editPayment();
     else await addPayment();
-    resetForm();
-    handleBack();
-  }
-
-  function handleClickBack() {
-    resetForm();
     handleBack();
   }
 
@@ -246,7 +234,7 @@ export default function PaymentForm({
           <View className="w-full justify-center px-2 mt-12">
             <PaymentTypeSelector
               onSelect={handleSelectPaymentType}
-              onBack={handleClickBack}
+              onBack={handleBack}
             />
           </View>
         ) : (
@@ -493,13 +481,13 @@ export default function PaymentForm({
               <Btn
                 color="red"
                 text="Cancel"
-                onPress={() => handleClickBack()}
+                onPress={() => handleBack()}
               />
             </View>
           </View>
         ) : selectedPaymentType ? (
           <View className="mt-4 w-full flex justify-center items-center">
-            <Btn color="red" text="Cancel" onPress={() => handleClickBack()} />
+            <Btn color="red" text="Cancel" onPress={() => handleBack()} />
           </View>
         ) : null}
       </View>
