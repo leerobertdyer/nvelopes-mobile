@@ -30,13 +30,21 @@ export default function AddCashToEnvelopeForm({
   return (
     <Modal>
       {showLoading && <Loading text={loadingText} />}
-      <ScrollView className="w-full h-full bg-my-white-light" contentContainerClassName="items-center justify-center min-h-full">
+      <ScrollView
+        className="w-full h-full bg-my-white-light"
+        contentContainerClassName="items-center justify-center min-h-full"
+      >
         <View
           className={`${totalSpendingBudget - cashAmount < 0 ? "bg-my-red-dark" : "bg-my-green-dark "} h-fit w-full  p-4`}
         >
           <MyText className="text-my-white-base mb-2 text-center">
-            Remaining Budget: ${(totalSpendingBudget - cashAmount).toFixed(2)}
+            Available Budget: ${totalSpendingBudget.toFixed(2)}
           </MyText>
+          {cashAmount > 0 && (
+            <MyText className="text-my-white-base mb-2 text-center">
+              Remainder: ${(totalSpendingBudget - cashAmount).toFixed(2)}
+            </MyText>
+          )}
           <MyText className="p-2 text-my-white-light text-center">
             Add cash to
           </MyText>

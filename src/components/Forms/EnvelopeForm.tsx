@@ -110,7 +110,7 @@ export default function EnvelopeForm(props: IProps) {
               handleBack?.();
             }}
             color="red"
-            text="Back"
+            text="Go Back"
           />
         </View>
       </View>

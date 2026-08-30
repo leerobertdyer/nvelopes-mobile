@@ -68,7 +68,7 @@ export default function BigTransaction({
               <MyText>{t.description}</MyText>
             </>
           )}
-          <Btn onPress={onClose} color="red" text="Back" />
+          <Btn onPress={onClose} color="red" text="Go Back" />
         </View>
       </View>
     </Modal>

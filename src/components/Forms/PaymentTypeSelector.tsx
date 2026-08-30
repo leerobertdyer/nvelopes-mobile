@@ -40,7 +40,7 @@ export default function PaymentTypeSelector({
 
       {onSkip && <Btn color="green" shadow onPress={onSkip} text={skipText}></Btn>}
 
-      {onBack && <Btn color="red" shadow onPress={onBack} text="Back"></Btn>}
+      {onBack && <Btn color="red" shadow onPress={onBack} text="Go Back"></Btn>}
     </View>
   );
 }

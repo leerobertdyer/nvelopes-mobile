@@ -144,9 +144,9 @@ export default function Debt() {
   const [extraMonthly, setExtraMonthly] = useState(0);
   const [showEditSnowball, setShowEditSnowball] = useState(false);
   const [debtMenuOpen, setDebtMenuOpen] = useState<Payment | null>(null);
-  const [payoffWarningDebtId, setPayoffWarningDebtId] = useState<
-    string | null
-  >(null);
+  const [payoffWarningDebtId, setPayoffWarningDebtId] = useState<string | null>(
+    null,
+  );
   const [additionalPaymentDebt, setAdditionalPaymentDebt] =
     useState<Payment | null>(null);
   const [additionalPaymentAmount, setAdditionalPaymentAmount] = useState(0);
@@ -269,7 +269,7 @@ export default function Debt() {
       budgetId: activeBudgetId,
       func: () => editPayments(newPayments, activeBudgetId),
     });
-    setShowEditSnowball(false)
+    setShowEditSnowball(false);
   }
 
   async function saveDebtInformation(d: Payment) {
@@ -383,7 +383,11 @@ export default function Debt() {
         },
         activeBudgetId,
       );
-      setPendingPayoff({ paidOffPayment, paymentsAtPayoff: updatedPayments, remainder: 0 });
+      setPendingPayoff({
+        paidOffPayment,
+        paymentsAtPayoff: updatedPayments,
+        remainder: 0,
+      });
     }
     Toast.show({ type: "success", text1: "Payment applied" });
   }
@@ -507,18 +511,18 @@ export default function Debt() {
 
   if (showDeletePayment && payDate && debtMenuOpen) {
     return (
-      <View className="w-full h-fit m-auto p-4 bg-my-black-dark w-">
-        <View className="full h-fit justify-center items-center ">
+      <View className="w-full h-full m-auto bg-my-black-dark items-center justify-center">
+        <View className="w-full h-[50%] justify-center items-center p-4">
           <MyText className="p-4 rounded-md text-my-white-dark w-full text-center">
             Are you sure you want to delete "{debtMenuOpen.name}"?
           </MyText>
           <MyText className="text-xs text-my-white-light text-center mb-4">
-            Removing this payment will not change your available budget.
+            Removing this debt will not change your available budget.
           </MyText>
           <View className="flex gap-2 items-center justify-center w-[95%]">
             <Btn
               text="Delete"
-              color="red"
+              color="gold"
               onPress={() => {
                 deleteBill();
                 setShowDeletePayment(false);
@@ -526,8 +530,8 @@ export default function Debt() {
               }}
             />
             <Btn
-              text="Back"
-              color="gold"
+              text="Go Back"
+              color="red"
               onPress={() => {
                 setShowDeletePayment(false);
                 setDebtMenuOpen(null);
@@ -560,7 +564,7 @@ export default function Debt() {
           <Btn
             color="red"
             onPress={() => setShowEditSnowball(false)}
-            text="Back"
+            text="Go Back"
           />
         </View>
       </View>
@@ -890,9 +894,7 @@ export default function Debt() {
 
         {payoffWarningDebtId &&
           (() => {
-            const warningDebt = debts.find(
-              (d) => d.id === payoffWarningDebtId,
-            );
+            const warningDebt = debts.find((d) => d.id === payoffWarningDebtId);
             if (!warningDebt) return null;
             return (
               <Modal transparent animationType="fade">
@@ -906,9 +908,9 @@ export default function Debt() {
                   >
                     <Entypo name="warning" size={28} color="#f87171" />
                     <MyText className="text-my-white-light text-sm text-center">
-                      Payoff cannot be calculated for "{warningDebt.name}".
-                      Your minimum payment may be too low to cover interest –
-                      try increasing the payment amount.
+                      Payoff cannot be calculated for "{warningDebt.name}". Your
+                      minimum payment may be too low to cover interest – try
+                      increasing the payment amount.
                     </MyText>
                     <Pressable onPress={() => setPayoffWarningDebtId(null)}>
                       <MyText className="text-my-blue-light underline text-sm mt-2">

@@ -28,7 +28,7 @@ import AddIncomeForm from "./Forms/AddIncomeForm";
 import { useDatabase } from "../context/DatabaseContext/useDatabase";
 import { useAuth } from "../context/AuthContext/useAuth";
 import { useBudget } from "../context/BudgetContext/useBudget";
-import { Button, Pressable, ScrollView, Text, View } from "react-native";
+import { Button, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import SplitPaymentDueModal from "./Payments/SplitPaymentDueModal";
 import CongratsPaidOffModal from "./Payments/CongratsPaidOffModal";
 import BigPayment from "./Payments/BigPayment";
@@ -290,7 +290,11 @@ export default function MainView() {
       text1: `${paidOffPayment.name} paid off!`,
     });
 
-    setPendingPayoff({ paidOffPayment, paymentsAtPayoff: updatedPayments, remainder });
+    setPendingPayoff({
+      paidOffPayment,
+      paymentsAtPayoff: updatedPayments,
+      remainder,
+    });
     return updatedPayments;
   }
 
@@ -764,7 +768,7 @@ export default function MainView() {
           />
           <Btn
             color="red"
-            text="Back"
+            text="Go Back"
             onPress={() => setShowClearNvelopes(false)}
           />
         </View>
@@ -773,36 +777,37 @@ export default function MainView() {
 
   if (showDeletePayment && payDate && paymentToEdit) {
     return (
-      <View className="w-full h-full">
-        <View className="bg-my-black-dark w-full h-fit justify-center items-center ">
-          <MyText className="p-4 rounded-md text-my-white-dark w-full text-center">
-            Are you sure you want to delete "{paymentToEdit.name}"?
-          </MyText>
-          <MyText className="text-xs text-my-white-light text-center mb-4">
-            Removing this payment will not change your available budget.
-          </MyText>
-          <View className="flex gap-2 items-center justify-center w-[95%]">
-            <Button
-              title="No"
-              color="red"
-              onPress={() => {
-                setShowDeletePayment(false);
-                resetPaymentState();
-              }}
-            />
-
-            <Button
-              title="Yes"
-              color="green"
-              onPress={() => {
-                deleteBill();
-                setShowDeletePayment(false);
-                resetPaymentState();
-              }}
-            />
+      <Modal>
+        <View className="w-full h-full bg-my-black-dark items-center justify-center">
+          <View className=" w-full h-[50%] justify-center items-center p-4">
+            <MyText className="p-4 rounded-md text-my-white-dark w-full text-center">
+              Are you sure you want to delete "{paymentToEdit.name}"?
+            </MyText>
+            <MyText className="text-xs text-my-white-light text-center mb-4">
+              Removing this payment will not change your available budget.
+            </MyText>
+            <View className="flex gap-2 items-center justify-center w-[95%]">
+              <Btn
+                text="Yes"
+                color="gold"
+                onPress={() => {
+                  deleteBill();
+                  setShowDeletePayment(false);
+                  resetPaymentState();
+                }}
+              />
+              <Btn
+                text="Go Back"
+                color="red"
+                onPress={() => {
+                  setShowDeletePayment(false);
+                  resetPaymentState();
+                }}
+              />
+            </View>
           </View>
         </View>
-      </View>
+      </Modal>
     );
   }
 

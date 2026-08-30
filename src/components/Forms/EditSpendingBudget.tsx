@@ -41,7 +41,7 @@ export default function EditSpendingBudget({ handleBack }: IProps) {
             allowNegative
           />
           <Btn color="gold" text="Save" onPress={manuallySetBudgetInDB} />
-          <Btn color="red" text="Back" onPress={resetState} />
+          <Btn color="red" text="Go Back" onPress={resetState} />
         </View>
       </View>
     </Modal>

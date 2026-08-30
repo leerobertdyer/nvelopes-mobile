@@ -161,7 +161,7 @@ export default function BudgetSettingsFields({
               />
               <Btn
                 color="red"
-                text="Back"
+                text="Go Back"
                 onPress={() => setShowIntervalSelector(false)}
               />
             </View>
@@ -210,7 +210,7 @@ export default function BudgetSettingsFields({
               />
               <Btn
                 color="red"
-                text="Back"
+                text="Go Back"
                 onPress={() => setShowPayDateCalendar(false)}
               />
             </View>

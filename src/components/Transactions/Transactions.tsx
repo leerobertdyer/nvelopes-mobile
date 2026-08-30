@@ -27,7 +27,7 @@ export default function Transactions({
             <TinyTransaction t={t} key={t.id}/>
           ))}
         </ScrollView>
-        <Btn color="red" text="Back" onPress={onClose} />
+        <Btn color="red" text="Go Back" onPress={onClose} />
       </View>
     </View>
   );

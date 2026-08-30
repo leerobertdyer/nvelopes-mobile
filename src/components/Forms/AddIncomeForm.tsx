@@ -68,7 +68,7 @@ export default function AddIncomeForm({
           {cashAmount > 0 && cashName.length > 0 && (
             <Btn text="Save" onPress={handleSave} color="gold" />
           )}
-          <Btn text="Back" onPress={handleBack} color="red" />
+          <Btn text="Go Back" onPress={handleBack} color="red" />
         </View>
       </View>
     </ScrollView>

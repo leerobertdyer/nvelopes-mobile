@@ -591,7 +591,7 @@ export default function Settings() {
             </MyText>
           </View>
           <Btn color="gold" text="Save" onPress={handleRestoreBackup} />
-          <Btn color="red" text="Back" onPress={handleCloseBackup} />
+          <Btn color="red" text="Go Back" onPress={handleCloseBackup} />
         </View>
       </Modal>
     );
@@ -658,7 +658,7 @@ export default function Settings() {
             }
           />
           <Btn
-            text="Back"
+            text="Go Back"
             color="red"
             onPress={() => setShowCreateBudgetModal(false)}
           />
@@ -686,7 +686,7 @@ export default function Settings() {
             />
             <View className="gap-2">
               <Btn
-                text="Back"
+                text="Go Back"
                 color="red"
                 onPress={() => setShowEditBudgetModal(false)}
               />
@@ -864,7 +864,7 @@ export default function Settings() {
                     </Picker>
                     <Btn
                       color="red"
-                      text="Back"
+                      text="Go Back"
                       onPress={() => setShowBudgetSelector(false)}
                     />
                   </View>
@@ -1003,14 +1003,14 @@ export default function Settings() {
                       )}
                     </View>
                     <Btn
-                      color="red"
+                      color="gold"
                       text="Delete Budget"
                       disabled={isDeletingBudget}
                       onPress={handleDeleteBudgetConfirm}
                     />
                     <Btn
-                      color="gold"
-                      text="Cancel"
+                      color="red"
+                      text="Go Back"
                       onPress={() => setShowDeleteBudgetConfirm(false)}
                     />
                   </View>
