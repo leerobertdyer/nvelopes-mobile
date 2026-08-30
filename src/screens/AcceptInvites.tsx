@@ -101,11 +101,6 @@ export default function AcceptInvite() {
           </MyText>
         </View>
         <LoginOptions />
-        <Btn
-          color="red"
-          text="Cancel"
-          onPress={() => navigationRef.navigate("Home" as never)}
-        />
       </View>
     );
   }

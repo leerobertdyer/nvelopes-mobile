@@ -13,6 +13,7 @@ import { useDatabase } from "../context/DatabaseContext/useDatabase";
 import { BackupData, Interval, ViewContent } from "../types";
 import {
   AsyncStorageBackup,
+  backupUserDataSafe,
   editIsNewUser,
   editPayDate,
   editPayPeriodInterval,
@@ -565,33 +566,37 @@ export default function Settings() {
   }
 
   function BackupSelectionConfirmScreen() {
-    if (!selectedSafeBackup) return null;
     return (
       <Modal>
-        <View className="bg-my-black-dark">
-          <View className="w-full text-center">
-            <MyText className="text-xl text-my-red-light">Are you sure?</MyText>
-            <MyText>You can undo this restore if needed.</MyText>
-            <MyText>
-              Your budget will reset to {selectedSafeBackup.totalSpendingBudget}
+        <View className="bg-my-white-light h-full w-full justify-center items-center">
+          <View className="w-full h-fit text-center justify-center items-center p-4 bg-my-black-dark">
+            <MyText className="text-xl text-my-red-light">
+              Are you sure??
             </MyText>
-            <MyText>
-              You will have {selectedSafeBackup.payments?.length ?? 0} payments
+            <MyText className="text-my-red-light">
+              You can undo this restore if needed.
+            </MyText>
+            <MyText className="text-my-red-light">
+              Your budget will reset to{" "}
+              {selectedSafeBackup?.totalSpendingBudget}
+            </MyText>
+            <MyText className="text-my-red-light">
+              You will have {selectedSafeBackup?.payments?.length ?? 0} payments
               totaling $
-              {(selectedSafeBackup.payments ?? [])
+              {(selectedSafeBackup?.payments ?? [])
                 .reduce((acc, p) => p.amount + acc, 0)
                 .toFixed(2)}
             </MyText>
             <MyText>
-              You will have {selectedSafeBackup.nvelopes?.length ?? 0} nvelopes
+              You will have {selectedSafeBackup?.nvelopes?.length ?? 0} nvelopes
               totaling $
-              {(selectedSafeBackup.nvelopes ?? [])
+              {(selectedSafeBackup?.nvelopes ?? [])
                 .reduce((acc, p) => p.total + acc, 0)
                 .toFixed(2)}
             </MyText>
+            <Btn color="gold" text="Save" onPress={handleRestoreBackup} />
+            <Btn color="red" text="Go Back" onPress={handleCloseBackup} />
           </View>
-          <Btn color="gold" text="Save" onPress={handleRestoreBackup} />
-          <Btn color="red" text="Go Back" onPress={handleCloseBackup} />
         </View>
       </Modal>
     );
@@ -699,7 +704,7 @@ export default function Settings() {
   if (showDeleteAccountConfirm)
     return (
       <View className="bg-my-black-dark h-full p-8 ">
-        <View className="w-full text-center mt-4">
+        <View className="w-full justify-center items-center mt-4">
           {!deletePasswordStep ? (
             <View className="items-center justify-center w-full">
               <MyText className="text-xl text-my-red-light font-bold mb-4">
@@ -945,7 +950,7 @@ export default function Settings() {
         {content === "BUDGET" && (
           <>
             <BackupSelectionScreen />
-            <BackupSelectionConfirmScreen />
+            {selectedSafeBackup && <BackupSelectionConfirmScreen />}
             <UndoLastRestoreScreen />
 
             {showUndoConfirm && asyncStorageBackup && (
@@ -971,12 +976,18 @@ export default function Settings() {
                     {asyncStorageBackup.data.envelopes?.length ?? 0} nvelopes
                   </MyText>
                 </View>
-                <Btn color="gold" text="Confirm" onPress={handleUndoRestore} />
-                <Btn
-                  color="red"
-                  text="Cancel"
-                  onPress={() => setShowUndoConfirm(false)}
-                />
+                <View className="gap-2 items-center justify-center w-full">
+                  <Btn
+                    color="gold"
+                    text="Confirm"
+                    onPress={handleUndoRestore}
+                  />
+                  <Btn
+                    color="red"
+                    text="Cancel"
+                    onPress={() => setShowUndoConfirm(false)}
+                  />
+                </View>
               </View>
             )}
 
@@ -1002,17 +1013,19 @@ export default function Settings() {
                         </MyText>
                       )}
                     </View>
-                    <Btn
-                      color="gold"
-                      text="Delete Budget"
-                      disabled={isDeletingBudget}
-                      onPress={handleDeleteBudgetConfirm}
-                    />
-                    <Btn
-                      color="red"
-                      text="Go Back"
-                      onPress={() => setShowDeleteBudgetConfirm(false)}
-                    />
+                    <View className="gap-2 items-center justify-center w-full">
+                      <Btn
+                        color="gold"
+                        text="Delete Budget"
+                        disabled={isDeletingBudget}
+                        onPress={handleDeleteBudgetConfirm}
+                      />
+                      <Btn
+                        color="red"
+                        text="Go Back"
+                        onPress={() => setShowDeleteBudgetConfirm(false)}
+                      />
+                    </View>
                   </View>
                 </View>
               </Modal>
@@ -1022,7 +1035,7 @@ export default function Settings() {
               <Modal>
                 <View className="bg-my-black-dark w-full h-screen justify-center items-center">
                   <View className="bg-my-black-dark w-full h-fit gap-4 items-center">
-                    <View className="w-full">
+                    <View className="w-full items-center justify-center">
                       <MyText className="text-xl text-my-red-light mb-2 w-full text-center">
                         Leave this budget?
                       </MyText>
