@@ -595,7 +595,7 @@ export default function MainView() {
     if (!user) return;
     const originalEnvelope = envelopes.find((e) => e.id === n.id);
     if (!originalEnvelope) return;
-    setLoadingText(isSpending ? "Stuffing Nvelope..." : "Editing Nvelope...");
+    setLoadingText(isSpending ? `Spending from ${n.name}...` : "Editing Nvelope...");
     setShowLoading(true);
     const newEnvelopes = [...envelopes].map((e) => (e.id === n.id ? n : e));
     setEnvelopes(newEnvelopes);

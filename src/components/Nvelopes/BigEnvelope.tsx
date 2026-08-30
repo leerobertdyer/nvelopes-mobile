@@ -111,7 +111,7 @@ export default function BigEnvelope({
     handleBack?.();
   }
 
-  if (isSpending) return <Loading text="Stuffing Nvelope..." />;
+  if (isSpending) return <Loading text={`Spending from ${envelope.name}...`} />;
 
   if (showTransactions)
     return (
