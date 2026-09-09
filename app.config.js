@@ -51,7 +51,7 @@ export default {
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
       googleServicesFile:
-        process.env.GOOGLE_SERVICES_JSON ?? "./google-services.json",
+        process.env.GOOGLE_SERVICE_JSON ?? "./GoogleService.json",
     },
     web: {
       favicon: "./src/assets/favicon.png",

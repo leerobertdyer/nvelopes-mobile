@@ -1,0 +1,82 @@
+{
+  "project_info": {
+    "project_number": "54632201316",
+    "project_id": "nvelope-3e93b",
+    "storage_bucket": "nvelope-3e93b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:54632201316:android:27b8883b28b937cdf5f371",
+        "android_client_info": {
+          "package_name": "com.ldyer.nvelopes"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "54632201316-0ochsicr0627219v3oo2fsauphqr5j86.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA7e2lkWH2yfifaSN-X3oGoXP4FqDj1a3I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "54632201316-0ochsicr0627219v3oo2fsauphqr5j86.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "54632201316-nkgg2475amv59u28gi0mil6p6g49a873.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.ldyer.nvelopes.dev"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:54632201316:android:2f5517599b874516f5f371",
+        "android_client_info": {
+          "package_name": "com.ldyer.nvelopes.dev"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "54632201316-0ochsicr0627219v3oo2fsauphqr5j86.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA7e2lkWH2yfifaSN-X3oGoXP4FqDj1a3I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "54632201316-0ochsicr0627219v3oo2fsauphqr5j86.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "54632201316-nkgg2475amv59u28gi0mil6p6g49a873.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.ldyer.nvelopes.dev"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
