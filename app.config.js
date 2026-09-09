@@ -76,7 +76,7 @@ export default {
         backgroundColor: "#fff2d9",
         image: "./src/assets/icon.png",
         dark: {
-          image: "./assets/icon-dark.png",
+          image: "./assets/icon.png",
           backgroundColor: "#242424",
         },
         imageWidth: 200,
