@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-const IS_DEV = process.env.APP_VARIANT === 'development';
+const IS_DEV = process.env.APP_VARIANT === "development";
 
 export default {
   expo: {
@@ -18,25 +18,22 @@ export default {
         projectId: "6d8f4d0f-205e-484a-abe4-2c14916ed45e",
       },
     },
-    splash: {
-      image: "./src/assets/splash-icon.png",
-      resizeMode: "contain",
-      backgroundColor: "#ffffff",
-    },
     ios: {
       associatedDomains: ["applinks:invite.nvelopes.app"],
       supportsTablet: false,
       buildReactNativeFromSource: true,
       usesAppleSignIn: true,
-      bundleIdentifier: IS_DEV ? "com.ldyer.nvelopes.dev" : "com.ldyer.nvelopes",
+      bundleIdentifier: IS_DEV
+        ? "com.ldyer.nvelopes.dev"
+        : "com.ldyer.nvelopes",
       googleServicesFile:
         process.env.GOOGLE_SERVICE_INFO_PLIST ?? "./GoogleService-Info.plist",
     },
     android: {
       package: IS_DEV ? "com.ldyer.nvelopes.dev" : "com.ldyer.nvelopes",
       adaptiveIcon: {
-        foregroundImage: "./src/assets/adaptive-icon.png",
-        backgroundColor: "#ffffff",
+        foregroundImage: "./src/assets/icon.png",
+        backgroundColor: "#fff2d9",
       },
       intentFilters: [
         {
@@ -74,6 +71,16 @@ export default {
           iosUrlScheme: process.env.EXPO_PUBLIC_REVERSED_CLIENT_ID,
         },
       ],
+      ["expo-splash-screen",
+      {
+        backgroundColor: "#fff2d9",
+        image: "./src/assets/icon.png",
+        dark: {
+          image: "./assets/icon-dark.png",
+          backgroundColor: "#242424",
+        },
+        imageWidth: 200,
+      },]
     ],
   },
 };
