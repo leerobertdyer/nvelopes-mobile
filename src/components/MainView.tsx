@@ -52,6 +52,8 @@ import NvelopesContainer from "./Nvelopes/NvelopesContainer";
 import MainEnvelope from "./Nvelopes/MainNvelope";
 import { DraxProvider } from "react-native-drax";
 import ContentSelector from "./ContentSelector";
+import Debt from "../screens/Debt";
+import Settings from "../screens/Settings";
 
 export default function MainView() {
   const { user } = useAuth();
@@ -83,7 +85,6 @@ export default function MainView() {
   const [showBudgetWarning, setShowBudgetWarning] = useState(false);
   const [cashName, setCashName] = useState("");
   const [cashAmount, setCashAmount] = useState(0);
-  const [showSpendPage, setShowSpendPage] = useState(false);
   const [loadingText, setLoadingText] = useState("");
   const [showLoading, setShowLoading] = useState(false);
   const [isAddingCashToEnvelope, setIsAddingCashToEnvelope] = useState(false);
@@ -262,10 +263,9 @@ export default function MainView() {
     });
   }
 
-  // Persists the payoff itself (debt already zeroed in updatedPayments). Does NOT touch
-  // the snowball or any remainder - both are deferred to the Congrats modal, so the user
-  // can choose whether to roll, which debt to target next, and what to do with any
-  // leftover from an overpayment instead of it happening silently.
+  // Persists the payoff itself. Does NOT touch the snowball or any remainder - both are deferred to the Congrats modal,
+  // so the user can choose whether to roll, which debt to target next,
+  // and what to do with any leftover from an overpayment instead of it happening silently.
   async function handleDebtPayoff(
     paidOffPayment: Payment,
     updatedPayments: Payment[],
@@ -507,7 +507,6 @@ export default function MainView() {
 
   async function handleSetShowSpendingPage(n: Nvelope) {
     setEnvelopeToEdit(n);
-    setShowSpendPage(true);
   }
 
   async function deleteEnvelope() {
@@ -595,7 +594,9 @@ export default function MainView() {
     if (!user) return;
     const originalEnvelope = envelopes.find((e) => e.id === n.id);
     if (!originalEnvelope) return;
-    setLoadingText(isSpending ? `Spending from ${n.name}...` : "Editing Nvelope...");
+    setLoadingText(
+      isSpending ? `Spending from ${n.name}...` : "Editing Nvelope...",
+    );
     setShowLoading(true);
     const newEnvelopes = [...envelopes].map((e) => (e.id === n.id ? n : e));
     setEnvelopes(newEnvelopes);
@@ -637,7 +638,6 @@ export default function MainView() {
     setCashAmount(0);
     setCashName("");
     setIsAddingCash(false);
-    setShowSpendPage(false);
     setShowBudgetWarning(false);
     setShowLoading(false);
     setLoadingText("");
@@ -960,10 +960,11 @@ export default function MainView() {
             contentContainerClassName="items-center"
           >
             <Header links={["Settings", "Debt"]} />
-
-            <MyText className="text-lg font-semibold text-my-black-dark mb-2 py-6">
-              {activeBudgetName}
-            </MyText>
+            <Pressable onPress={() => setContent("SETTINGS")}>
+              <MyText className="text-lg font-semibold text-my-black-dark mb-2 py-6">
+                {activeBudgetName}
+              </MyText>
+            </Pressable>
 
             {!payDate && (
               <Pressable
@@ -992,24 +993,32 @@ export default function MainView() {
                 handleDeleteEnvelope={handleSetupDelete}
                 handleAddCashToEnvelope={handleAddCashToEnvelope}
               />
-            ) : (
+            ) : content === "BILLS" ? (
               <PaymentMap
                 paymentsThisPeriod={paymentsThisPeriod}
                 handleUpdatePaid={handleUpdatePaid}
                 handleEditBill={handleEditPayment}
               />
+            ) : content === "DEBT" ? (
+              <Debt />
+            ) : (
+              content === "SETTINGS" && <Settings />
             )}
           </ScrollView>
         </DraxProvider>
 
         <View className="w-full gap-4 mt-4">
-          <ActionButtons
-            onPaymentClick={handleAddPayment}
-            onCashClick={handleAddCash}
-            onEnvelopeClick={handleSetupNewEnvelope}
-            onClearClick={() => setShowClearNvelopes(true)}
-          />
-          <ContentSelector content={content} setContent={setContent} />
+          {content === "NVELOPES" && (
+            <ActionButtons
+              onPaymentClick={handleAddPayment}
+              onCashClick={handleAddCash}
+              onEnvelopeClick={handleSetupNewEnvelope}
+              onClearClick={() => setShowClearNvelopes(true)}
+            />
+          )}
+          <View>
+            <ContentSelector content={content} setContent={setContent} />
+          </View>
         </View>
       </View>
       {pendingPayoff && (

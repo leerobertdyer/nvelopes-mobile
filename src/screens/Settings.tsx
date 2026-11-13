@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import Header from "../components/Nav/Header";
 import EditSpendingBudget from "../components/Forms/EditSpendingBudget";
 import BudgetSettingsFields, {
   BudgetMeta,
@@ -13,8 +12,6 @@ import { useDatabase } from "../context/DatabaseContext/useDatabase";
 import { BackupData, Interval, ViewContent } from "../types";
 import {
   AsyncStorageBackup,
-  backupUserDataSafe,
-  editIsNewUser,
   editPayDate,
   editPayPeriodInterval,
   getAsyncStorageBackup,
@@ -776,11 +773,6 @@ export default function Settings() {
 
   return (
     <ScrollView className="w-full">
-      <Header links={["Home", "Debt"]} />
-
-      <MyText className="text-3xl font-bold mb-4 text-center pt-8">
-        Settings
-      </MyText>
       <ContentSelector content={content} setContent={setContent} />
       {content === "BUDGET" && (
         <View className="w-full items-center gap-2 mt-4 py-[1rem]">

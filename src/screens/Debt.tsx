@@ -659,9 +659,6 @@ export default function Debt() {
 
   return (
     <View className="w-full h-full bg-my-blue-dark py-4">
-      <View className="py-4">
-        <Header links={["Home", "Settings"]} />
-      </View>
       <ScrollView
         contentContainerClassName="items-center"
         className="w-full h-full my-0 py-[3rem] bg-my-blue-dark"

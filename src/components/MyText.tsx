@@ -1,5 +1,5 @@
-import { Text as RNText, TextProps } from 'react-native';
+import { Text, TextProps } from 'react-native';
 
 export function MyText(props: TextProps) {
-  return <RNText {...props} className={`font-sans ${props.className ?? ''}`} />;
+  return <Text {...props} className={`font-sans ${props.className ?? ''}`} />;
 }

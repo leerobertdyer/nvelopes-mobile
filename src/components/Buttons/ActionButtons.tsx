@@ -30,6 +30,20 @@ export default function ActionButtons({
 }: ActionButtonsProps) {
   return (
     <View className="flex-row w-full justify-center gap-4 items-center">
+      {/* Nvelope Button */}
+      <Pressable
+        ref={envelopeRef}
+        onPress={onEnvelopeClick}
+        className="bg-my-blue-dark border-2 border-my-black-dark rounded-lg p-[1px] h-[6rem] w-[6rem]"
+      >
+        <View className="flex-1 pt-2 justify-center items-center">
+          <MyIcon type={"NVELOPE"} />
+        </View>
+        <MyText className="text-sm w-full text-center text-my-white-light ">
+          Nvelope
+        </MyText>
+      </Pressable>
+
       {/* Payment Button */}
       <Pressable
         ref={paymentRef}
@@ -39,7 +53,9 @@ export default function ActionButtons({
         <View className="flex-1 pt-2 justify-center items-center">
           <MyIcon type={"PAYMENT"} />
         </View>
-        <MyText className="text-sm w-full text-center text-my-white-light">Payment</MyText>
+        <MyText className="text-sm w-full text-center text-my-white-light">
+          Bill
+        </MyText>
       </Pressable>
 
       {/* Cash Button */}
@@ -51,19 +67,9 @@ export default function ActionButtons({
         <View className="flex-1 pt-2 justify-center items-center">
           <MyIcon type={"CASH"} />
         </View>
-        <MyText className="text-sm w-full text-center text-my-white-light">Cash</MyText>
-      </Pressable>
-
-      {/* Nvelope Button */}
-      <Pressable
-        ref={envelopeRef}
-        onPress={onEnvelopeClick}
-        className="bg-my-blue-dark border-2 border-my-black-dark rounded-lg p-[1px] h-[6rem] w-[6rem]"
-      >
-        <View className="flex-1 pt-2 justify-center items-center">
-          <MyIcon type={"NVELOPE"} />
-        </View>
-        <MyText className="text-sm w-full text-center text-my-white-light">Nvelope</MyText>
+        <MyText className="text-sm w-full text-center text-my-white-light">
+          Add Cash
+        </MyText>
       </Pressable>
 
       {/* Clear Button */}
@@ -75,7 +81,9 @@ export default function ActionButtons({
         <View className="flex-1 pt-2 justify-center items-center">
           <MyIcon type={"RESET"} />
         </View>
-        <MyText className="text-sm w-full text-center text-my-white-light">Reset</MyText>
+        <MyText className="text-sm w-full text-center text-my-white-light">
+          Reset
+        </MyText>
       </Pressable>
     </View>
   );

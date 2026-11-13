@@ -10,9 +10,12 @@ export interface Nvelope {
 }
 export type ViewContent =
   | "NVELOPES"
-  | "PAYMENTS"
+  | "BILLS"
   | "ACCOUNT"
   | "BUDGET"
+  | "DEBT"
+  | "SETTINGS"
+  | ""
 
   export type NvelopesTransactionType =
   | "DELETE"

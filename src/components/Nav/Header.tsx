@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import NavMenu from "./NavMenu";
 import {
   calculateCurrentIntervalStart,
   getIntervalDateRange,
@@ -89,7 +88,6 @@ export default function Header({ links }: { links: string[] }) {
             ${totalSpendingBudget.toFixed(2)}
           </MyText>
         </View>
-        <NavMenu showMenu={showMenu} setShowMenu={setShowMenu} links={links} />
       </View>
     </View>
   );
