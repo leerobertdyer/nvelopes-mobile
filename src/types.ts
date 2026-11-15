@@ -14,10 +14,9 @@ export type ViewContent =
   | "ACCOUNT"
   | "BUDGET"
   | "DEBT"
-  | "SETTINGS"
-  | ""
+  | "SETTINGS";
 
-  export type NvelopesTransactionType =
+export type NvelopesTransactionType =
   | "DELETE"
   | "EDIT"
   | "SPEND"
@@ -44,6 +43,18 @@ export interface NvelopesTransaction {
 }
 
 export type InviteStatus = "pending" | "consumed" | "expired" | "revoked";
+
+export interface BudgetMeta {
+  id: string;
+  name: string;
+  ownerId: string;
+  memberIds: string[];
+  memberEmails: Record<string, string>;
+  createdAt: string;
+  envelopeCount: number;
+  billCount: number;
+  availableBudget: number;
+}
 
 export interface Invite {
   budgetId: string;

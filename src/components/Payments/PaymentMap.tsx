@@ -100,7 +100,10 @@ export default function PaymentMap({
             </Pressable>
           )}
 
-          <View className="w-10 h-10 mr-2 rounded-md bg-my-white-light border border-my-black-light" style={hidePayments && {marginLeft: 10}}>
+          <View
+            className="w-10 h-10 mr-2 rounded-md bg-my-white-light border border-my-black-light"
+            style={hidePayments && { marginLeft: 10 }}
+          >
             <View className="h-2 bg-my-red-base" />
             <View className="flex-1 items-center justify-center">
               <MyText className="text-sm font-bold">
@@ -119,7 +122,7 @@ export default function PaymentMap({
               numberOfLines={1}
               className={`max-w-[9rem] text-sm ${deriveIsPaid(p) && "text-my-black-light"}`}
             >
-            {p.name}
+              {p.name}
             </MyText>
           </View>
 
@@ -167,26 +170,28 @@ export default function PaymentMap({
 
   return (
     <View className="h-fit w-full mb-8">
-      <View className="w-full flex-row items-center justify-between border-y-2 bg-my-white-base">
-        <Pressable onPress={() => setView("CURRENT")}>
+      <View className="w-full flex-row items-center border-y-2 bg-my-white-base">
+        <Pressable className="w-1/3" onPress={() => setView("CURRENT")}>
           <MyText
-            className={`border-r-2 text-center px-4 py-2 ${view === "CURRENT" ? "bg-my-white-dark" : "underline"}`}
+            className={`text-center px-4 py-2 w-full ${view === "CURRENT" && "bg-my-white-dark"}`}
           >
-            Current Payments
+            Due
           </MyText>
         </Pressable>
-        <Pressable onPress={() => setView("ALL")}>
+        <View className="w-[1px] h-full bg-black"></View>
+        <Pressable className="w-1/3" onPress={() => setView("ALL")}>
           <MyText
-            className={`border-r-2 px-8 py-2 ${view === "ALL" ? "bg-my-white-dark" : "underline"}`}
+            className={`px-8 py-2 text-center ${view === "ALL" && "bg-my-white-dark"}`}
           >
-            All Payments
+            All Bills
           </MyText>
         </Pressable>
-        <Pressable onPress={() => setView("TRANSACTIONS")}>
+        <View className="w-[1px] h-full bg-black"></View>
+        <Pressable className="w-1/3" onPress={() => setView("TRANSACTIONS")}>
           <MyText
-            className={`py-2 px-4 ${view === "TRANSACTIONS" ? "bg-my-white-dark" : "underline"}`}
+            className={`w-full py-2 px-4 text-center ${view === "TRANSACTIONS" && "bg-my-white-dark"}`}
           >
-            Transactions
+            History
           </MyText>
         </Pressable>
       </View>

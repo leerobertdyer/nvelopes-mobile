@@ -33,7 +33,6 @@ import SplitPaymentDueModal from "./Payments/SplitPaymentDueModal";
 import CongratsPaidOffModal from "./Payments/CongratsPaidOffModal";
 import BigPayment from "./Payments/BigPayment";
 import PaymentForm from "./Forms/PaymentForm";
-import ActionButtons from "./Buttons/ActionButtons";
 import PaymentMap from "./Payments/PaymentMap";
 import { MyText } from "./MyText";
 import Btn from "./Buttons/Btn";
@@ -54,12 +53,12 @@ import { DraxProvider } from "react-native-drax";
 import ContentSelector from "./ContentSelector";
 import Debt from "../screens/Debt";
 import Settings from "../screens/Settings";
+import AllBudgets from "../screens/AllBudgets";
 
 export default function MainView() {
   const { user } = useAuth();
-  const { activeBudgetId, budgets } = useBudget();
-  const activeBudgetName =
-    budgets.find((b) => b.id === activeBudgetId)?.name ?? "Budget";
+  const { activeBudgetId } = useBudget();
+
   const {
     totalSpendingBudget,
     setTotalSpendingBudget,
@@ -93,6 +92,7 @@ export default function MainView() {
   const [dismissedDuePayments, setDismissedDuePayments] = useState<Set<string>>(
     new Set(),
   );
+  const [showAllBudgets, setShowAllBudgets] = useState(false);
   const [pendingPayoff, setPendingPayoff] = useState<{
     paidOffPayment: Payment;
     paymentsAtPayoff: Payment[];
@@ -744,6 +744,8 @@ export default function MainView() {
     resetState();
   }
 
+  if (showAllBudgets) return <AllBudgets handleClose={() => setShowAllBudgets(false)} />
+
   if (showClearEnvelopes)
     return (
       <View className="justify-center items-center bg-my-blue-dark h-fit w-full m-auto p-6">
@@ -959,12 +961,11 @@ export default function MainView() {
             className="w-full h-full"
             contentContainerClassName="items-center"
           >
-            <Header links={["Settings", "Debt"]} />
-            <Pressable onPress={() => setContent("SETTINGS")}>
-              <MyText className="text-lg font-semibold text-my-black-dark mb-2 py-6">
-                {activeBudgetName}
-              </MyText>
-            </Pressable>
+            <Header
+              handleAddCash={handleAddCash}
+              showAllBudgets={() => setShowAllBudgets(true)}
+            />
+            <View className="my-2" />
 
             {!payDate && (
               <Pressable
@@ -1006,20 +1007,8 @@ export default function MainView() {
             )}
           </ScrollView>
         </DraxProvider>
-
-        <View className="w-full gap-4 mt-4">
-          {content === "NVELOPES" && (
-            <ActionButtons
-              onPaymentClick={handleAddPayment}
-              onCashClick={handleAddCash}
-              onEnvelopeClick={handleSetupNewEnvelope}
-              onClearClick={() => setShowClearNvelopes(true)}
-            />
-          )}
-          <View>
-            <ContentSelector content={content} setContent={setContent} />
-          </View>
-        </View>
+        <View className="my-4" />
+        <ContentSelector content={content} setContent={setContent} />
       </View>
       {pendingPayoff && (
         <CongratsPaidOffModal

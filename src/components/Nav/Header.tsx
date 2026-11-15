@@ -6,15 +6,25 @@ import {
 } from "../../util/util";
 import { differenceInCalendarDays, startOfDay } from "date-fns";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 import { MyText } from "../MyText";
 import EditSpendingBudget from "../Forms/EditSpendingBudget";
+import MyIcon from "../MyIcon";
+import { useBudget } from "../../context/BudgetContext/useBudget";
 
-export default function Header({ links }: { links: string[] }) {
+export default function Header({
+  handleAddCash,
+  showAllBudgets,
+}: {
+  handleAddCash: () => void;
+  showAllBudgets: () => void;
+}) {
   const { totalSpendingBudget, payPeriodInterval, payDate } = useDatabase();
   const [daysTillReset, setDaysTillReset] = useState(0);
-  const [showMenu, setShowMenu] = useState(false);
   const [showEditSpendingBudget, setShowEditSpendingBudget] = useState(false);
+  const { activeBudgetId, budgets } = useBudget();
+  const activeBudgetName =
+    budgets.find((b) => b.id === activeBudgetId)?.name ?? "Budget";
 
   useEffect(() => {
     // Handle Display for payPeriod and remaining Budget
@@ -64,7 +74,16 @@ export default function Header({ links }: { links: string[] }) {
 
   return (
     <View className="w-full">
-      <View className="flex-row items-end justify-around gap-8 w-screen px-6">
+      <Pressable
+        onPress={showAllBudgets}
+        className="w-full flex-row justify-center items-start gap-2 mb-4"
+      >
+        <MyIcon type="BACK" size={20} />
+        <MyText className="text-md font-semibold text-my-blue-dark mb-2 w-fit">
+          {activeBudgetName}
+        </MyText>
+      </Pressable>
+      <View className="flex-row justify-around items-center gap-8 w-screen px-6">
         <View
           className={`w-1/3 h-14 items-center justify-center border-2 border-my-white-light rounded-md ${daysTillReset > 3 ? "bg-my-red-dark" : "bg-my-green-dark"}`}
         >
@@ -77,7 +96,7 @@ export default function Header({ links }: { links: string[] }) {
           </MyText>
         </View>
         <View
-          className={`rounded-md border-2 border-my-white-light w-1/3 h-14 justify-center
+          className={`rounded-md border-2 border-my-white-light  h-14 justify-center
             ${totalSpendingBudget < 0 ? "bg-my-red-dark" : totalSpendingBudget === 0 ? "bg-my-black-light" : "bg-my-green-dark"}`}
         >
           <MyText
@@ -88,6 +107,12 @@ export default function Header({ links }: { links: string[] }) {
             ${totalSpendingBudget.toFixed(2)}
           </MyText>
         </View>
+        <Pressable
+          onPress={handleAddCash}
+          className="bg-my-green-dark border-2 border-my-black-dark rounded-lg p-[1px] h-[3rem] w-[3rem] justify-center items-center"
+        >
+          <MyIcon type={"CASH"} size={30} />
+        </Pressable>
       </View>
     </View>
   );

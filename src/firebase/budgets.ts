@@ -1,7 +1,7 @@
 import firestore from "@react-native-firebase/firestore";
 import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { MONTHLY, BUDGET_DATA_DOC_ID } from "../constants";
-import type { Interval, NvelopesTransaction } from "../types";
+import type { BudgetMeta, Interval, NvelopesTransaction } from "../types";
 
 type User = FirebaseAuthTypes.User;
 
@@ -126,11 +126,32 @@ export async function getBudgetMeta(budgetId: string) {
   const d = snap.data();
   if (!d) return;
   return {
+    id: budgetId,
     name: d.name ?? "Budget",
     ownerId: d.ownerId as string,
     memberIds: (d.memberIds as string[]) ?? [],
     memberEmails: (d.memberEmails as Record<string, string>) ?? undefined,
     createdAt: d.createdAt,
+  };
+}
+
+// Gets budget metadata INCLUDING envelope/bill count and available budget
+export async function getAllBudgetData(budgetId: string): Promise<BudgetMeta> {
+  const meta = await getBudgetMeta(budgetId);
+  const snapshot = firestore()
+    .doc(`budgets/${budgetId}/data/${BUDGET_DATA_DOC_ID}`)
+    .get();
+  const data = (await snapshot).data();
+  return {
+    id: budgetId,
+    name: meta?.name,
+    ownerId: meta?.ownerId ?? "",
+    memberIds: meta?.memberIds ?? [],
+    memberEmails: meta?.memberEmails ?? {},
+    createdAt: meta?.createdAt,
+    envelopeCount: data?.envelopes.length,
+    billCount: data?.payments.length,
+    availableBudget: data?.totalSpendingBudget,
   };
 }
 

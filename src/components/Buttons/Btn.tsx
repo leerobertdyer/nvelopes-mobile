@@ -9,6 +9,7 @@ export default function Btn({
   disabled = false,
   shadow = false,
   w = "w-[80%]",
+  h = "h-[4.5rem]",
   border = ""
 }: {
   children?: React.ReactNode;
@@ -18,6 +19,7 @@ export default function Btn({
   disabled?: boolean;
   shadow?: boolean;
   w?: string;
+  h?: string;
   border?: string
 }) {
   const bgColor = () => {
@@ -38,7 +40,7 @@ export default function Btn({
   return (
     <Pressable
       disabled={disabled}
-      className={`rounded-lg h-[4.5rem] ${w} max-w-[20rem] p-2 items-center justify-center m-auto
+      className={`rounded-lg ${h} ${w} max-w-[20rem] p-2 items-center justify-center m-auto
           disabled:opacity-40
               ${bgColor()}
               ${border}`
