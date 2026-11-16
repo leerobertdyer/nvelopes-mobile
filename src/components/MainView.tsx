@@ -53,7 +53,7 @@ import { DraxProvider } from "react-native-drax";
 import ContentSelector from "./ContentSelector";
 import Debt from "../screens/Debt";
 import Settings from "../screens/Settings";
-import AllBudgets from "../screens/AllBudgets";
+import AllBudgets from "../screens/budgets/AllBudgets";
 
 export default function MainView() {
   const { user } = useAuth();

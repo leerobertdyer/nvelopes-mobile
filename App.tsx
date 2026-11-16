@@ -23,7 +23,7 @@ import {
 } from "@react-navigation/native";
 import TransactionProvider from "./src/context/TransactionContext/TransactionProvider";
 import * as Linking from "expo-linking";
-import AcceptInvite from "./src/screens/AcceptInvites";
+import AcceptInvite from "./src/screens/budgets/AcceptInvites";
 import { ErrorBoundary } from "./src/components/ErrorBoundary";
 
 const linking = {

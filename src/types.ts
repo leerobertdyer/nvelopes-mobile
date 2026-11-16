@@ -44,17 +44,6 @@ export interface NvelopesTransaction {
 
 export type InviteStatus = "pending" | "consumed" | "expired" | "revoked";
 
-export interface BudgetMeta {
-  id: string;
-  name: string;
-  ownerId: string;
-  memberIds: string[];
-  memberEmails: Record<string, string>;
-  createdAt: string;
-  envelopeCount: number;
-  billCount: number;
-  availableBudget: number;
-}
 
 export interface Invite {
   budgetId: string;
@@ -116,13 +105,17 @@ export type Backup = {
   data: BackupData[];
 };
 
-// Multi-budget: budget metadata (budgets/{budgetId})
-export interface Budget {
+
+export interface BudgetMeta {
+  id: string;
   name: string;
   ownerId: string;
   memberIds: string[];
   memberEmails?: Record<string, string>;
-  createdAt?: Timestamp;
+  createdAt: string;
+  envelopeCount?: number;
+  billCount?: number;
+  availableBudget?: number;
 }
 
 // User's reference to a budget (users/{userId}/budgets/{budgetId})

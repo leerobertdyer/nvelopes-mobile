@@ -1,5 +1,5 @@
 import { DateData, Calendar } from "react-native-calendars";
-import { Interval } from "../../types";
+import { BudgetMeta, Interval } from "../../types";
 import IntervalSelector from "./IntervalSelector";
 import { Modal, View } from "react-native";
 import { MyText } from "../MyText";
@@ -11,13 +11,6 @@ import { useBudget } from "../../context/BudgetContext/useBudget";
 import { getBudgetMeta, updateBudgetName } from "../../firebase/budgets";
 import { useAuth } from "../../context/AuthContext/useAuth";
 import Toast from "react-native-toast-message";
-
-export interface BudgetMeta {
-  name: string;
-  ownerId: string;
-  memberIds: string[];
-  memberEmails?: Record<string, string>;
-}
 
 export interface BudgetSettingsFieldsProps {
   /** "create" = interval + pay date only; "edit" = Edit Remaining Balance card + interval + pay date */
@@ -32,6 +25,7 @@ export interface BudgetSettingsFieldsProps {
   intervalLabel?: string;
   budgetMeta: BudgetMeta | null;
   setBudgetMeta: (b: BudgetMeta) => void;
+  onSave?: () => void;
 }
 
 /**
@@ -48,13 +42,12 @@ export default function BudgetSettingsFields({
   intervalLabel,
   budgetMeta,
   setBudgetMeta,
+  onSave,
 }: BudgetSettingsFieldsProps) {
   const { activeBudgetId, refetchBudgets } = useBudget();
   const { user } = useAuth();
 
-  const newPaymentDate = payDate
-    ? format(payDate, "yyyy-MM-dd")
-    : format(new Date(), "yyyy-MM-dd"); // Default to today's date string if it's a brand new payment
+  const newPaymentDate = payDate ? format(payDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"); // Default to today's date string if it's a brand new payment
 
   const [showIntervalSelector, setShowIntervalSelector] = useState(false);
   const [showPayDateCalendar, setShowPayDateCalendar] = useState(false);
@@ -62,28 +55,27 @@ export default function BudgetSettingsFields({
   const [isSavingBudgetName, setIsSavingBudgetName] = useState(false);
   const [editingBudgetName, setEditingBudgetName] = useState(false);
 
-  function handleIntervalChange(e: Interval) {
+  function handleIntervalChange(i: Interval) {
     setShowIntervalSelector(false);
-    onIntervalChange(e);
+    onIntervalChange(i);
+    onSave?.();
   }
 
   async function handleSaveBudgetName() {
     if (!user || !activeBudgetId || !budgetNameInput.trim()) return;
     setIsSavingBudgetName(true);
     try {
-      const ok = await updateBudgetName(
-        activeBudgetId,
-        user.uid,
-        budgetNameInput.trim(),
-      );
+      const ok = await updateBudgetName(activeBudgetId, user.uid, budgetNameInput.trim());
       if (ok) {
         const meta = await getBudgetMeta(activeBudgetId);
         if (meta)
           setBudgetMeta({
+            id: activeBudgetId,
             name: meta.name,
             ownerId: meta.ownerId,
             memberIds: meta.memberIds,
             memberEmails: meta.memberEmails,
+            createdAt: meta.createdAt,
           });
         await refetchBudgets();
         setEditingBudgetName(false);
@@ -94,15 +86,12 @@ export default function BudgetSettingsFields({
       }
     } finally {
       setIsSavingBudgetName(false);
+      onSave?.();
     }
   }
   return (
     <View className="items-center w-full h-fit gap-4 mb-4">
-      {budgetMeta && mode === "edit" && (
-        <MyText className="text-xl text-my-white-dark">
-           "{budgetMeta.name}"
-        </MyText>
-      )}
+      {budgetMeta && mode === "edit" && <MyText className="text-xl text-my-white-dark">"{budgetMeta.name}"</MyText>}
       {editingBudgetName && (
         <Modal>
           <View className="justify-center gap-2 w-full flex-1 bg-my-black-base">
@@ -133,19 +122,9 @@ export default function BudgetSettingsFields({
           </View>
         </Modal>
       )}
-      {mode == "edit" && (
-        <Btn
-          color="gold"
-          text="Edit Budget Name"
-          onPress={() => setEditingBudgetName(true)}
-        />
-      )}
+      {mode == "edit" && <Btn color="gold" text="Edit Budget Name" onPress={() => setEditingBudgetName(true)} />}
       {mode === "edit" && onEditRemainingBalance && (
-        <Btn
-          color="gold"
-          text="Edit Remaining Balance"
-          onPress={onEditRemainingBalance}
-        />
+        <Btn color="gold" text="Edit Remaining Balance" onPress={onEditRemainingBalance} />
       )}
       {showIntervalSelector ? (
         <Modal>
@@ -154,25 +133,14 @@ export default function BudgetSettingsFields({
               <IntervalSelector
                 value={intervalValue}
                 onChange={(e) => handleIntervalChange(e)}
-                label={
-                  intervalLabel ??
-                  (mode === "create" ? "Pay period interval" : undefined)
-                }
+                label={intervalLabel ?? (mode === "create" ? "Pay period interval" : undefined)}
               />
-              <Btn
-                color="red"
-                text="Go Back"
-                onPress={() => setShowIntervalSelector(false)}
-              />
+              <Btn color="red" text="Go Back" onPress={() => setShowIntervalSelector(false)} />
             </View>
           </View>
         </Modal>
       ) : (
-        <Btn
-          color="gold"
-          text="Change Budget Period"
-          onPress={() => setShowIntervalSelector(true)}
-        />
+        <Btn color="gold" text="Change Budget Period" onPress={() => setShowIntervalSelector(true)} />
       )}
       {showPayDateCalendar ? (
         <Modal>
@@ -205,23 +173,16 @@ export default function BudgetSettingsFields({
                 onDayPress={(d) => {
                   setShowPayDateCalendar(false);
                   onPayDateChange(d);
+                  onSave?.();
                 }}
                 date={newPaymentDate}
               />
-              <Btn
-                color="red"
-                text="Go Back"
-                onPress={() => setShowPayDateCalendar(false)}
-              />
+              <Btn color="red" text="Go Back" onPress={() => setShowPayDateCalendar(false)} />
             </View>
           </View>
         </Modal>
       ) : (
-        <Btn
-          text="Change Pay Date"
-          color="gold"
-          onPress={() => setShowPayDateCalendar(true)}
-        />
+        <Btn text="Change Pay Date" color="gold" onPress={() => setShowPayDateCalendar(true)} />
       )}
     </View>
   );

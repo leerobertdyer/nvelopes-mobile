@@ -1,15 +1,15 @@
 import { View } from "react-native";
-import { MyText } from "../components/MyText";
+import { MyText } from "../../components/MyText";
 import { RouteProp, useRoute } from "@react-navigation/native";
-import { navigationRef, RootStackParamList } from "../../App";
+import { navigationRef, RootStackParamList } from "../../../App";
 import { useEffect, useState } from "react";
-import { Invite } from "../types";
-import { acceptToken, getInviteToken } from "../firebase/invites";
-import Btn from "../components/Buttons/Btn";
-import { useAuth } from "../context/AuthContext/useAuth";
-import { useBudget } from "../context/BudgetContext/useBudget";
-import LoginOptions from "../components/Auth/LoginOptions";
-import Loading from "../components/Loading";
+import { Invite } from "../../types";
+import { acceptToken, getInviteToken } from "../../firebase/invites";
+import Btn from "../../components/Buttons/Btn";
+import { useAuth } from "../../context/AuthContext/useAuth";
+import { useBudget } from "../../context/BudgetContext/useBudget";
+import LoginOptions from "../../components/Auth/LoginOptions";
+import Loading from "../../components/Loading";
 
 type AcceptInviteRouteProp = RouteProp<RootStackParamList, "AcceptInvite">;
 
@@ -82,11 +82,7 @@ export default function AcceptInvite() {
           <MyText className="w-[80%] text-center m-auto text-my-red-dark">
             {tokenError ?? "This invite is invalid or has expired."}
           </MyText>
-          <Btn
-            color="green"
-            text="Go home"
-            onPress={() => navigationRef.navigate("Home" as never)}
-          />
+          <Btn color="green" text="Go home" onPress={() => navigationRef.navigate("Home" as never)} />
         </View>
       </View>
     );
@@ -96,9 +92,7 @@ export default function AcceptInvite() {
     return (
       <View className="bg-my-blue-dark justify-center h-full items-center w-full p-6 gap-4">
         <View className="w-full items-center justify-center bg-my-white-dark p-8 gap-4">
-          <MyText className="w-[80%] text-center m-auto">
-            Sign in to accept your invite to "{tokenMeta.budgetName}"
-          </MyText>
+          <MyText className="w-[80%] text-center m-auto">Sign in to accept your invite to "{tokenMeta.budgetName}"</MyText>
         </View>
         <LoginOptions />
       </View>
@@ -108,15 +102,9 @@ export default function AcceptInvite() {
   return (
     <View className="bg-my-blue-dark justify-center h-full items-center w-full">
       <View className="w-full items-center justify-center bg-my-white-dark p-8 gap-4">
-        <MyText className="w-[80%] text-center m-auto">
-          You've been invited to join "{tokenMeta.budgetName}"
-        </MyText>
+        <MyText className="w-[80%] text-center m-auto">You've been invited to join "{tokenMeta.budgetName}"</MyText>
         <Btn color="green" text="accept" onPress={() => handleAcceptInvite()} />
-        <Btn
-          color="red"
-          text="decline"
-          onPress={() => navigationRef.navigate("Home" as never)}
-        />
+        <Btn color="red" text="decline" onPress={() => navigationRef.navigate("Home" as never)} />
       </View>
     </View>
   );
