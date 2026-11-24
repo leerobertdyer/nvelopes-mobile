@@ -117,7 +117,7 @@ export default function FirstTimeSetup() {
 
   return (
     <ScrollView className="h-full w-full bg-my-black-dark text-my-white-light">
-      {user && <Header handleAddCash={() => {}} showAllBudgets={() => {}}/>}
+      {user && <Header handleAddCash={() => {}} showBudgetSettings={() => {}}/>}
       <View className="items-center justify-center gap-6 p-6">
         <MyText className="text-center text-lg text-white">
           When was your last pay date?

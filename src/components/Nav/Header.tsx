@@ -14,10 +14,10 @@ import { useBudget } from "../../context/BudgetContext/useBudget";
 
 export default function Header({
   handleAddCash,
-  showAllBudgets,
+  showBudgetSettings,
 }: {
   handleAddCash: () => void;
-  showAllBudgets: () => void;
+  showBudgetSettings: () => void;
 }) {
   const { totalSpendingBudget, payPeriodInterval, payDate } = useDatabase();
   const [daysTillReset, setDaysTillReset] = useState(0);
@@ -75,7 +75,7 @@ export default function Header({
   return (
     <View className="w-full">
       <Pressable
-        onPress={showAllBudgets}
+        onPress={showBudgetSettings}
         className="w-full flex-row justify-center items-start gap-2 mb-4"
       >
         <MyIcon type="BACK" size={20} />

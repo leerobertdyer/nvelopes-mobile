@@ -16,7 +16,7 @@ import { useDatabase } from "../../context/DatabaseContext/useDatabase";
 import { DateData } from "react-native-calendars";
 import { editPayPeriodInterval } from "../../firebase/editData";
 
-export default function AllBudgets({ handleClose }: { handleClose: () => void }) {
+export default function BudgetSettings({ handleClose }: { handleClose: () => void }) {
   const { budgets, activeBudgetId, setActiveBudgetId, refetchBudgets } = useBudget();
   const { payDate } = useDatabase();
 
@@ -26,7 +26,7 @@ export default function AllBudgets({ handleClose }: { handleClose: () => void })
   const [budgetMeta, setBudgetMeta] = useState<BudgetMeta | null>(null);
 
   const [loading, setLoading] = useState(true);
-  const [showEditBudgetModal, setShowEditBudgetModal] = useState(false);
+  const [showEditBudgetModal, setShowEditBudgetModal] = useState(true);
 
   const [isCreatingBudget, setIsCreatingBudget] = useState(false);
   const [showCreateBudgetModal, setShowCreateBudgetModal] = useState(false);
@@ -159,7 +159,7 @@ export default function AllBudgets({ handleClose }: { handleClose: () => void })
               onSave={() => setShowEditBudgetModal}
             />
             <View className="gap-2">
-              <Btn text="Go Back" color="red" onPress={() => setShowEditBudgetModal(false)} />
+              <Btn text="Go Back" color="red" onPress={() => handleClose()} />
             </View>
           </View>
         </View>

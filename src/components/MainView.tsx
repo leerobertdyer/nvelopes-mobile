@@ -53,7 +53,7 @@ import { DraxProvider } from "react-native-drax";
 import ContentSelector from "./ContentSelector";
 import Debt from "../screens/Debt";
 import Settings from "../screens/Settings";
-import AllBudgets from "../screens/budgets/AllBudgets";
+import BudgetSettings from "../screens/budgets/BudgetSettings";
 
 export default function MainView() {
   const { user } = useAuth();
@@ -92,7 +92,7 @@ export default function MainView() {
   const [dismissedDuePayments, setDismissedDuePayments] = useState<Set<string>>(
     new Set(),
   );
-  const [showAllBudgets, setShowAllBudgets] = useState(false);
+  const [showBudgetSettings, setShowBudgetSettings] = useState(false);
   const [pendingPayoff, setPendingPayoff] = useState<{
     paidOffPayment: Payment;
     paymentsAtPayoff: Payment[];
@@ -744,7 +744,7 @@ export default function MainView() {
     resetState();
   }
 
-  if (showAllBudgets) return <AllBudgets handleClose={() => setShowAllBudgets(false)} />
+  if (showBudgetSettings) return <BudgetSettings handleClose={() => setShowBudgetSettings(false)} />
 
   if (showClearEnvelopes)
     return (
@@ -963,7 +963,7 @@ export default function MainView() {
           >
             <Header
               handleAddCash={handleAddCash}
-              showAllBudgets={() => setShowAllBudgets(true)}
+              showBudgetSettings={() => setShowBudgetSettings(true)}
             />
             <View className="my-2" />
 
