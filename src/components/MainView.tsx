@@ -132,6 +132,7 @@ export default function MainView() {
     if (duePayment && !dueFundPayment) {
       setDueFundPayment(duePayment);
     }
+
   }, [payments, dismissedDuePayments, dueFundPayment]);
 
   async function handleEditPayment(p: Payment) {
@@ -779,7 +780,6 @@ export default function MainView() {
 
   if (showDeletePayment && payDate && paymentToEdit) {
     return (
-      <Modal>
         <View className="w-full h-full bg-my-black-dark items-center justify-center">
           <View className=" w-full h-[50%] justify-center items-center p-4">
             <MyText className="p-4 rounded-md text-my-white-dark w-full text-center">
@@ -809,7 +809,6 @@ export default function MainView() {
             </View>
           </View>
         </View>
-      </Modal>
     );
   }
 

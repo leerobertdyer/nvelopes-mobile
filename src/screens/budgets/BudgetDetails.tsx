@@ -1,5 +1,5 @@
 import { Modal, Pressable, View } from "react-native";
-import { BackupData, BudgetMeta } from "../../types";
+import { BackupData, BudgetMeta, Interval } from "../../types";
 import { MyText } from "../../components/MyText";
 import { useAuth } from "../../context/AuthContext/useAuth";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
@@ -8,7 +8,13 @@ import Input from "../../components/Input";
 import { useBudget } from "../../context/BudgetContext/useBudget";
 import Toast from "react-native-toast-message";
 import { useEffect, useState } from "react";
-import { AsyncStorageBackup, getAsyncStorageBackup, getSafeBackups, restoreFromSafeBackup } from "../../firebase/editData";
+import {
+  AsyncStorageBackup,
+  editPayPeriodInterval,
+  getAsyncStorageBackup,
+  getSafeBackups,
+  restoreFromSafeBackup,
+} from "../../firebase/editData";
 import Loading from "../../components/Loading";
 import { auth } from "../../firebase/firebase";
 import { inviteUserToBudget } from "../../firebase/invites";
@@ -17,14 +23,28 @@ import { Picker } from "@react-native-picker/picker";
 import UndoRestoreLastBackup from "./UndoRestoreLastBackupModal";
 import LeaveBudgetModal from "./LeaveBudgetModal";
 import { format } from "date-fns";
+import BudgetSettingsFields from "../../components/Forms/BudgetSettingsFields";
+import { DateData } from "react-native-calendars";
 
-export default function BudgetDetails(budget: BudgetMeta) {
+interface IBudgetDetails {
+  budget: BudgetMeta;
+  newBudgetInterval: Interval | null;
+  handleCalendarChange: (d: DateData) => void;
+  setShowDeleteBudgetConfirm: (b: boolean) => void;
+}
+
+export default function BudgetDetails({
+  budget,
+  newBudgetInterval,
+  handleCalendarChange,
+  setShowDeleteBudgetConfirm,
+}: IBudgetDetails) {
   const { user } = useAuth();
-  const { activeBudgetId, budgets } = useBudget();
-  const { setPayments, setEnvelopes, setTotalSpendingBudget } = useDatabase();
+  const { activeBudgetId, budgets, setActiveBudgetId } = useBudget();
+  const { setPayments, setEnvelopes, setTotalSpendingBudget, payDate } = useDatabase();
 
   const isOwner = user && budget && budget.ownerId === user.uid;
-  const isMember = user && budget.memberIds.includes(user.uid) && !isOwner;
+  const isMember = user && budget && budget.memberIds.includes(user.uid) && !isOwner;
 
   // Budget Sharing
   const [sharing, setSharing] = useState(false);
@@ -140,6 +160,10 @@ export default function BudgetDetails(budget: BudgetMeta) {
     }
   }
 
+  function handleSetBudget(b: BudgetMeta) {
+    setActiveBudgetId(b.id);
+  }
+
   if (sharing) return <Loading text="Sharing..." />;
 
   if (showLeaveBudgetConfirm)
@@ -163,8 +187,16 @@ export default function BudgetDetails(budget: BudgetMeta) {
   return (
     <View className="w-full items-center gap-2 mt-4 py-[1rem]">
       <View className="w-full gap-2 items-center">
-        <MyText className="text-my-black-light text-xs text-center">Budget name</MyText>
-        <MyText className="text-my-black-dark font-medium">{budget.name}</MyText>
+        <BudgetSettingsFields
+          mode="edit"
+          intervalValue={newBudgetInterval}
+          onIntervalChange={(i) => editPayPeriodInterval(i, activeBudgetId!)}
+          budgetMeta={budget}
+          setBudgetMeta={handleSetBudget} // TODO: fix this
+          payDate={payDate?.toDate() ?? null}
+          onPayDateChange={handleCalendarChange}
+          onSave={() => {}}
+        />
         {isOwner && budget.memberIds.filter((id) => id !== budget.ownerId).length > 0 && (
           <View className="w-full max-w-[20rem] gap-1 bg-my-white-dark/30 rounded-md mb-2">
             <View className="bg-my-black-base rounded-t-md gap-2 py-2">
@@ -245,7 +277,7 @@ export default function BudgetDetails(budget: BudgetMeta) {
   function BackupSelectionScreen() {
     return (
       <View className="justify-between items-center w-[80%] p-4 bg-my-black-base rounded-md border-2 border-my-white-dark my-4">
-        <MyText className="text-sm font-bold text-my-white-light">⚠️ Revert To A Backup</MyText>
+        <MyText className="text-sm font-bold text-my-white-light">Revert To A Backup</MyText>
         <MyText className="text-xs text-my-white-base">Restores payments and nvelopes</MyText>
         <View className="w-full">
           {isLoadingSafeBackups ? (

@@ -12,21 +12,20 @@ import { useAuth } from "../../context/AuthContext/useAuth";
 import EditSpendingBudget from "../../components/Forms/EditSpendingBudget";
 import Input from "../../components/Input";
 import Toast from "react-native-toast-message";
-import { useDatabase } from "../../context/DatabaseContext/useDatabase";
 import { DateData } from "react-native-calendars";
-import { editPayPeriodInterval } from "../../firebase/editData";
+import DeleteBudgetModal from "./DeleteBudgetModal";
+import BudgetDetails from "./BudgetDetails";
+import BudgetSelector from "./BudgetSelector";
 
 export default function BudgetSettings({ handleClose }: { handleClose: () => void }) {
-  const { budgets, activeBudgetId, setActiveBudgetId, refetchBudgets } = useBudget();
-  const { payDate } = useDatabase();
+  const { activeBudgetId, setActiveBudgetId, refetchBudgets } = useBudget();
 
   const { user } = useAuth();
 
-  const [bugetsWithMeta, setBudgetsWithMeta] = useState<BudgetMeta[]>([]);
-  const [budgetMeta, setBudgetMeta] = useState<BudgetMeta | null>(null);
+  const [budget, setBudget] = useState<BudgetMeta | null>(null);
 
   const [loading, setLoading] = useState(true);
-  const [showEditBudgetModal, setShowEditBudgetModal] = useState(true);
+  const [showBudgetSelector, setShowBudgetSelector] = useState(false);
 
   const [isCreatingBudget, setIsCreatingBudget] = useState(false);
   const [showCreateBudgetModal, setShowCreateBudgetModal] = useState(false);
@@ -39,33 +38,22 @@ export default function BudgetSettings({ handleClose }: { handleClose: () => voi
 
   const [showDeleteBudgetConfirm, setShowDeleteBudgetConfirm] = useState(false);
 
-
-  // Get budgets
+  // Get budget
   useEffect(() => {
-    if (!user || !activeBudgetId) return;
-    async function populateMeta() {
-      const bucket = [];
-      for (const b of budgets) {
-        const budget = await getAllBudgetData(b.id);
-        if (budget) {
-          bucket.push(budget);
-        }
-      }
-      setBudgetsWithMeta(bucket);
+    if (!user || !activeBudgetId) {
       setLoading(false);
+      return;
     }
-    populateMeta();
+
+    async function populateBudget(activeBudgetId: string) {
+      const b = await getAllBudgetData(activeBudgetId);
+      setBudget(b);
+    }
+    populateBudget(activeBudgetId);
+
+    setLoading(false);
   }, []);
 
-  async function selectBudget(id: string) {
-    if (activeBudgetId === id) return;
-    setActiveBudgetId(id);
-    handleClose();
-  }
-
-  async function handleEditBudget() {
-    setShowEditBudgetModal(true);
-  }
   async function handleNewBudget() {
     setShowCreateBudgetModal(true);
   }
@@ -100,7 +88,8 @@ export default function BudgetSettings({ handleClose }: { handleClose: () => voi
 
   if (loading) return <Loading text="Loading budgets..." />;
 
-  if (showDeleteBudgetConfirm) return <DeleteBudgetModal b={budget} setShowDeleteBudgetConfirm={setShowDeleteBudgetConfirm} />;
+  if (showDeleteBudgetConfirm && budget)
+    return <DeleteBudgetModal b={budget} setShowDeleteBudgetConfirm={setShowDeleteBudgetConfirm} />;
 
   if (isEditingCash) {
     return <EditSpendingBudget handleBack={() => setIsEditingCash(false)} />;
@@ -118,8 +107,8 @@ export default function BudgetSettings({ handleClose }: { handleClose: () => voi
             onChange={(e) => setNewBudgetName(e)}
           />
           <BudgetSettingsFields
-            budgetMeta={budgetMeta}
-            setBudgetMeta={setBudgetMeta}
+            budgetMeta={budget}
+            setBudgetMeta={setBudget}
             mode="create"
             intervalValue={newBudgetInterval}
             onIntervalChange={(i) => setNewBudgetInterval(i)}
@@ -143,86 +132,27 @@ export default function BudgetSettings({ handleClose }: { handleClose: () => voi
       </ScrollView>
     );
 
-  if (showEditBudgetModal)
-    return (
-      <Modal>
-        <View className="justify-center gap-4 w-full h-full bg-my-black-base">
-          <View className="w-full h-fit m-auto bg-my-blue-dark p-4">
-            <BudgetSettingsFields
-              mode="edit"
-              intervalValue={newBudgetInterval}
-              onIntervalChange={(i) => editPayPeriodInterval(i, activeBudgetId!)}
-              budgetMeta={budgetMeta}
-              setBudgetMeta={setBudgetMeta}
-              payDate={payDate?.toDate() ?? null}
-              onPayDateChange={handleCalendarChange}
-              onSave={() => setShowEditBudgetModal}
-            />
-            <View className="gap-2">
-              <Btn text="Go Back" color="red" onPress={() => handleClose()} />
-            </View>
-          </View>
-        </View>
-      </Modal>
-    );
+  if (showBudgetSelector) return <BudgetSelector setShowBudgetSelector={setShowBudgetSelector} />;
+  // if (!budget) return;
   return (
-    <ScrollView contentContainerClassName="justify-center items-center">
-      <View className="p-2 gap-2">
-        <MyText className="text-xl text-center font-bold">Switch Budget</MyText>
-        {bugetsWithMeta.map((b) => (
-          <View
-            key={b.id}
-            className={`
-            w-[24rem] h-fit 
-            rounded-md  border-my-black-dark
-            p-2 bg-white
-            ${b.id === activeBudgetId ? "border-4 border-my-blue-dark" : "border-2"}`}
-          >
-            <View className="flex-row items-center justify-center gap-2 w-full">
-              <MyText numberOfLines={1} className="text-lg text-center text-my-black-light">
-                {b.name}
-              </MyText>
-            </View>
-            <MyText className="text-center text-lg">${b.availableBudget?.toFixed(2)}</MyText>
-
-            <View className="flex-row items-center justify-center gap-2 ml-4">
-              <View className="flex-row items-center justify-center gap-2 mt-2">
-                <View className="items-center">
-                  <View className="w-[2.25rem] h-[2.25rem] p-2 rounded-md bg-my-black-dark justify-center items-center">
-                    <MyIcon type="NVELOPE" size={22} />
-                  </View>
-                  <MyText className="text-lg">{b.envelopeCount}</MyText>
-                </View>
-                <View className="items-center">
-                  <View className="w-[2.25rem] h-[2.25rem] p-2 rounded-md bg-my-red-dark justify-center items-center">
-                    <MyIcon type="CASH" size={22} />
-                  </View>
-                  <MyText className="text-lg">{b.billCount}</MyText>
-                </View>
-              </View>
-              {activeBudgetId === b.id ? (
-                <View className="flex-1 mx-4 gap-2">
-                  <Btn color="gold" text="Edit" h="h-[2rem]" onPress={() => handleEditBudget()} />
-                  <Btn color="red" text="Delete" h="h-[2rem]" onPress={() => {}} />
-                </View>
-              ) : (
-                <View className="flex-1 mx-4 gap-2">
-                  <Btn color="green" text="Switch" h="h-[2rem]" onPress={() => selectBudget(b.id)} />
-                  <Btn color="red" text="Delete" h="h-[2rem]" onPress={() => {}} />
-                </View>
-              )}
-            </View>
-          </View>
-        ))}
-        <Pressable
-          onPress={handleNewBudget}
-          className="w-[24rem] bg-white h-[10rem] rounded-md border-2 justify-center items-center"
-        >
-          <MyIcon type="ADD" />
-          <MyText>Add New Budget</MyText>
-        </Pressable>
+    <>
+      <ScrollView contentContainerClassName="justify-center items-center">
+        <View className="w-full h-fit m-auto bg-my-blue-dark p-2">
+          {budget && (
+            <BudgetDetails
+              budget={budget}
+              handleCalendarChange={handleCalendarChange}
+              newBudgetInterval={newBudgetInterval}
+              setShowDeleteBudgetConfirm={setShowDeleteBudgetConfirm}
+            />
+          )}
+        </View>
+      </ScrollView>
+      <View className="gap-2 mt-4">
+        <Btn text="Switch Budgets" color="green" onPress={() => setShowBudgetSelector(true)} />
+        <Btn text="New Budget" color="gold" onPress={() => setShowCreateBudgetModal(true)} />
+        <Btn text="Go Back" color="red" onPress={() => handleClose()} />
       </View>
-      <Btn color="red" onPress={() => handleClose()} text="Back" w="w-full" />
-    </ScrollView>
+    </>
   );
 }

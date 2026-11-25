@@ -11,6 +11,7 @@ import { useBudget } from "../../context/BudgetContext/useBudget";
 import { getBudgetMeta, updateBudgetName } from "../../firebase/budgets";
 import { useAuth } from "../../context/AuthContext/useAuth";
 import Toast from "react-native-toast-message";
+import { useDatabase } from "../../context/DatabaseContext/useDatabase";
 
 export interface BudgetSettingsFieldsProps {
   /** "create" = interval + pay date only; "edit" = Edit Remaining Balance card + interval + pay date */
@@ -46,6 +47,7 @@ export default function BudgetSettingsFields({
 }: BudgetSettingsFieldsProps) {
   const { activeBudgetId, refetchBudgets } = useBudget();
   const { user } = useAuth();
+  const { payPeriodInterval } = useDatabase();
 
   const newPaymentDate = payDate ? format(payDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"); // Default to today's date string if it's a brand new payment
 
@@ -91,12 +93,17 @@ export default function BudgetSettingsFields({
   }
   return (
     <View className="items-center w-full h-fit gap-4 mb-4">
-      {budgetMeta && mode === "edit" && <MyText className="text-xl text-my-white-dark">"{budgetMeta.name}"</MyText>}
+      {budgetMeta && mode === "edit" && (
+        <View className="w-full items-center gap-[3px]">
+          <MyText className="text-my-black-base">Budget name: {budgetMeta.name}</MyText>
+          <Btn color="gold" text="Edit Name" onPress={() => setEditingBudgetName(true)} />
+        </View>
+      )}
       {editingBudgetName && (
         <Modal>
           <View className="justify-center gap-2 w-full flex-1 bg-my-black-base">
             <View className="items-center gap-2 w-full h-fit m-auto">
-              <MyText className="text-my-white-dark">Update Budget Name</MyText>
+              <MyText className="text-my-white-dark">Update Name</MyText>
               <Input
                 id="budget-name-edit"
                 label=""
@@ -122,7 +129,6 @@ export default function BudgetSettingsFields({
           </View>
         </Modal>
       )}
-      {mode == "edit" && <Btn color="gold" text="Edit Budget Name" onPress={() => setEditingBudgetName(true)} />}
       {mode === "edit" && onEditRemainingBalance && (
         <Btn color="gold" text="Edit Remaining Balance" onPress={onEditRemainingBalance} />
       )}
@@ -140,7 +146,10 @@ export default function BudgetSettingsFields({
           </View>
         </Modal>
       ) : (
-        <Btn color="gold" text="Change Budget Period" onPress={() => setShowIntervalSelector(true)} />
+        <View className="w-full items-center gap-[3px]">
+          <MyText className="text-my-black-base">Budget Interval: {payPeriodInterval?.toLowerCase()}</MyText>
+          <Btn color="gold" text="Edit Interval" onPress={() => setShowIntervalSelector(true)} />
+        </View>
       )}
       {showPayDateCalendar ? (
         <Modal>
@@ -182,7 +191,10 @@ export default function BudgetSettingsFields({
           </View>
         </Modal>
       ) : (
-        <Btn text="Change Pay Date" color="gold" onPress={() => setShowPayDateCalendar(true)} />
+        <View className="w-full items-center gap-[3px]">
+          <MyText className="text-my-black-base">Paydate: {payDate?.toDateString()}</MyText>
+          <Btn text="Change Pay Date" color="gold" onPress={() => setShowPayDateCalendar(true)} />
+        </View>
       )}
     </View>
   );

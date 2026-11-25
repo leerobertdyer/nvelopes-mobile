@@ -1,7 +1,5 @@
 import type { Payment, Nvelope, Interval, NvelopesTransaction } from "../types";
-import firestore, {
-  FirebaseFirestoreTypes,
-} from "@react-native-firebase/firestore";
+import firestore, { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
 import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { budgetDataRef } from "./budgets";
 import { cleanPaymentsForFirebase } from "../util/util";
@@ -23,10 +21,7 @@ function isPermissionDeniedError(error: unknown): boolean {
 
 export async function addTransaction(t: NvelopesTransaction, budgetId: string) {
   try {
-    await firestore()
-      .collection(`budgets/${budgetId}/transactions`)
-      .doc(t.id)
-      .set(t);
+    await firestore().collection(`budgets/${budgetId}/transactions`).doc(t.id).set(t);
   } catch (error) {
     console.error("Error adding transaction: ", error);
   }
@@ -45,10 +40,7 @@ export async function editDatabaseWithTransaction<T>({
   return await func();
 }
 
-export async function createUserProfile(user: {
-  uid: string;
-  email: string | null;
-}) {
+export async function createUserProfile(user: { uid: string; email: string | null }) {
   try {
     const userRef = firestore().collection("users").doc(user.uid);
 
@@ -78,11 +70,7 @@ export async function updateBudgetStateAndDBB(
   setTotalSpendingBudget(newBudget);
 }
 
-export async function resetAllNvelopes(
-  nvelopes: Nvelope[],
-  setEnvelopes: (e: Nvelope[]) => void,
-  budgetId: string,
-) {
+export async function resetAllNvelopes(nvelopes: Nvelope[], setEnvelopes: (e: Nvelope[]) => void, budgetId: string) {
   const updatedNvelopes = [...nvelopes].map((n) => {
     return { ...n, spent: 0, total: 0, paid: false };
   });
@@ -141,10 +129,7 @@ export async function editPayDate(payDate: Date, budgetId: string) {
   }
 }
 
-export async function editTotalSpendingBudget(
-  newTotal: number,
-  budgetId: string,
-) {
+export async function editTotalSpendingBudget(newTotal: number, budgetId: string) {
   try {
     await budgetDataRef(budgetId).update({ totalSpendingBudget: newTotal });
   } catch (error) {
@@ -170,10 +155,7 @@ export async function editTotalSpendingBudget(
  * This would enable pie charts, spending trends, and period comparisons.
  */
 
-export async function editSnowballTargetPaymentId(
-  budgetId: string,
-  paymentId: string | null,
-) {
+export async function editSnowballTargetPaymentId(budgetId: string, paymentId: string | null) {
   await budgetDataRef(budgetId).update({ snowballTargetPaymentId: paymentId });
 }
 
@@ -193,10 +175,7 @@ const MAX_BACKUPS = 30;
  *   This ensures we maintain at least 5 days of backup history (30 × 4 hours = 120 hours)
  */
 /** Backups for a budget: filter by budgetId or missing (migrated). */
-function backupsForBudget(
-  docs: { id: string; data: () => Record<string, unknown> }[],
-  budgetId: string,
-) {
+function backupsForBudget(docs: { id: string; data: () => Record<string, unknown> }[], budgetId: string) {
   return docs.filter((d) => {
     const data = d.data();
     const bid = data.budgetId;
@@ -208,12 +187,8 @@ export async function shouldBackupUserDataSafe(user: User, budgetId: string) {
   if (!user) return false;
   try {
     const now = firestore.Timestamp.fromDate(new Date());
-    const backupsCollectionRef = firestore().collection(
-      `userBackups/${user.uid}/backups`,
-    );
-    const snapshot = await backupsCollectionRef
-      .orderBy("backupTimeStamp", "desc")
-      .get();
+    const backupsCollectionRef = firestore().collection(`userBackups/${user.uid}/backups`);
+    const snapshot = await backupsCollectionRef.orderBy("backupTimeStamp", "desc").get();
     const forBudget = backupsForBudget(snapshot.docs, budgetId);
     const backupCount = forBudget.length;
     if (backupCount === 0) return true;
@@ -243,10 +218,8 @@ export async function backupUserDataSafe(user: User, budgetId: string) {
     if (!docSnap.exists) return;
     const data = docSnap.data();
     if (!data) return;
-    const hasEnvelopes =
-      Array.isArray(data.envelopes) && data.envelopes.length > 0;
-    const hasPayments =
-      Array.isArray(data.payments) && data.payments.length > 0;
+    const hasEnvelopes = Array.isArray(data.envelopes) && data.envelopes.length > 0;
+    const hasPayments = Array.isArray(data.payments) && data.payments.length > 0;
     if (!hasEnvelopes && !hasPayments) return;
     const newTime = firestore.Timestamp.fromDate(new Date());
     const backupData = {
@@ -262,9 +235,7 @@ export async function backupUserDataSafe(user: User, budgetId: string) {
       snowballTargetPaymentId: data.snowballTargetPaymentId ?? null,
       totalSpendingBudget: data.totalSpendingBudget ?? 0,
     };
-    const backupsCollectionRef = firestore().collection(
-      `userBackups/${user.uid}/backups`,
-    );
+    const backupsCollectionRef = firestore().collection(`userBackups/${user.uid}/backups`);
     await backupsCollectionRef.add(backupData);
     await pruneOldBackups(user.uid, 30);
   } catch (error) {
@@ -280,12 +251,8 @@ export async function backupUserDataSafe(user: User, budgetId: string) {
 export async function getSafeBackups(user: User, budgetId: string) {
   if (!user) return [];
   try {
-    const backupsCollectionRef = firestore().collection(
-      `userBackups/${user.uid}/backups`,
-    );
-    const snapshot = await backupsCollectionRef
-      .orderBy("backupTimeStamp", "desc")
-      .get();
+    const backupsCollectionRef = firestore().collection(`userBackups/${user.uid}/backups`);
+    const snapshot = await backupsCollectionRef.orderBy("backupTimeStamp", "desc").get();
     const forBudget = backupsForBudget(snapshot.docs, budgetId);
     return forBudget.map((d) => ({ id: d.id, ...d.data() }));
   } catch (error) {
@@ -294,11 +261,7 @@ export async function getSafeBackups(user: User, budgetId: string) {
   }
 }
 
-export async function restoreFromSafeBackup(
-  backupId: string,
-  user: User,
-  budgetId: string,
-) {
+export async function restoreFromSafeBackup(backupId: string, user: User, budgetId: string) {
   if (!user || !backupId) return null;
   try {
     const dataRef = budgetDataRef(budgetId);
@@ -312,9 +275,7 @@ export async function restoreFromSafeBackup(
       payDate: currentData.payDate ?? null,
       payPeriodInterval: currentData.payPeriodInterval ?? "MONTHLY",
     });
-    const backupDocRef = firestore().doc(
-      `userBackups/${user.uid}/backups/${backupId}`,
-    );
+    const backupDocRef = firestore().doc(`userBackups/${user.uid}/backups/${backupId}`);
     const backupSnap = await backupDocRef.get();
     if (!backupSnap.exists) return null;
     const b = backupSnap.data();
@@ -334,22 +295,16 @@ export async function restoreFromSafeBackup(
  */
 async function pruneOldBackups(userId: string, keepCount: number) {
   try {
-    const backupsCollectionRef = firestore().collection(
-      `userBackups/${userId}/backups`,
-    );
+    const backupsCollectionRef = firestore().collection(`userBackups/${userId}/backups`);
 
-    const snapshot = await backupsCollectionRef
-      .orderBy("backupTimeStamp", "desc")
-      .get();
+    const snapshot = await backupsCollectionRef.orderBy("backupTimeStamp", "desc").get();
 
     if (snapshot.size <= keepCount) return;
 
     // Delete backups beyond keepCount
     const docsToDelete = snapshot.docs.slice(keepCount);
     for (const docToDelete of docsToDelete) {
-      await firestore()
-        .doc(`userBackups/${userId}/backups/${docToDelete.id}`)
-        .delete();
+      await firestore().doc(`userBackups/${userId}/backups/${docToDelete.id}`).delete();
     }
   } catch (error) {
     console.error("Error pruning old backups:", error);
@@ -443,25 +398,17 @@ function toTimestamp(obj: unknown): Timestamp | null {
 /**
  * Restore from backup (undo last restore) into the given budget.
  */
-export async function restoreFromAsyncStorageBackup(
-  user: User,
-  budgetId: string,
-): Promise<boolean> {
+export async function restoreFromAsyncStorageBackup(user: User, budgetId: string): Promise<boolean> {
   if (!user) return false;
   const backup = await getAsyncStorageBackup();
   if (!backup) return false;
   try {
     const { data } = backup;
-    const restoredPayments = (data.payments ?? []).map(
-      (p: Payment & { dueDate?: unknown; paidDates?: unknown[] }) => ({
-        ...p,
-        dueDate: toTimestamp(p.dueDate) ?? firestore.Timestamp.now(),
-        paidDates:
-          (p.paidDates ?? [])
-            .map((pd) => toTimestamp(pd))
-            .filter((t): t is Timestamp => t !== null) ?? [],
-      }),
-    );
+    const restoredPayments = (data.payments ?? []).map((p: Payment & { dueDate?: unknown; paidDates?: unknown[] }) => ({
+      ...p,
+      dueDate: toTimestamp(p.dueDate) ?? firestore.Timestamp.now(),
+      paidDates: (p.paidDates ?? []).map((pd) => toTimestamp(pd)).filter((t): t is Timestamp => t !== null) ?? [],
+    }));
     await editTotalSpendingBudget(Number(data.totalSpendingBudget), budgetId);
     await editEnvelopes(data.envelopes ?? [], budgetId);
     await editPayments(restoredPayments, budgetId);

@@ -112,5 +112,6 @@ export default function Home() {
     return <Loading text="Welcome to Nvelopes..." />;
   }
 
+
   return <MainView />;
 }

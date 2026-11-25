@@ -28,6 +28,7 @@ export default function Header({
 
   useEffect(() => {
     // Handle Display for payPeriod and remaining Budget
+    
     if (!payDate || !payPeriodInterval) {
       setDaysTillReset(0);
       return;
