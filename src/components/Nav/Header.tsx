@@ -1,9 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  calculateCurrentIntervalStart,
-  getIntervalDateRange,
-  getNumberOfDaysFromInterval,
-} from "../../util/util";
+import { calculateCurrentIntervalStart, getIntervalDateRange, getNumberOfDaysFromInterval } from "../../util/util";
 import { differenceInCalendarDays, startOfDay } from "date-fns";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
 import { Pressable, View } from "react-native";
@@ -23,22 +19,20 @@ export default function Header({
   const [daysTillReset, setDaysTillReset] = useState(0);
   const [showEditSpendingBudget, setShowEditSpendingBudget] = useState(false);
   const { activeBudgetId, budgets } = useBudget();
-  const activeBudgetName =
-    budgets.find((b) => b.id === activeBudgetId)?.name ?? "Budget";
+  const activeBudgetName = budgets.find((b) => b.id === activeBudgetId)?.name ?? "Budget";
+
+  // TODO: handle spend cash
 
   useEffect(() => {
     // Handle Display for payPeriod and remaining Budget
-    
+
     if (!payDate || !payPeriodInterval) {
       setDaysTillReset(0);
       return;
     }
     const today = startOfDay(new Date());
 
-    const currentPayPeriodStart = calculateCurrentIntervalStart(
-      payDate.toDate(),
-      payPeriodInterval,
-    );
+    const currentPayPeriodStart = calculateCurrentIntervalStart(payDate.toDate(), payPeriodInterval);
     // If today IS the period start, show the full period length
     if (startOfDay(currentPayPeriodStart).getTime() === today.getTime()) {
       const periodLength = getNumberOfDaysFromInterval(payPeriodInterval);
@@ -46,10 +40,7 @@ export default function Header({
       return;
     }
 
-    let { end } = getIntervalDateRange(
-      payPeriodInterval,
-      currentPayPeriodStart,
-    );
+    let { end } = getIntervalDateRange(payPeriodInterval, currentPayPeriodStart);
 
     const beginningOfPayday = startOfDay(payDate.toDate());
     if (beginningOfPayday > today) {
@@ -68,33 +59,30 @@ export default function Header({
     setDaysTillReset(diffDays >= 0 ? diffDays + 1 : 0);
   }, [payPeriodInterval, payDate, totalSpendingBudget]);
 
-  if (showEditSpendingBudget)
-    return (
-      <EditSpendingBudget handleBack={() => setShowEditSpendingBudget(false)} />
-    );
+  async function spendCash() {}
+
+  if (showEditSpendingBudget) return <EditSpendingBudget handleBack={() => setShowEditSpendingBudget(false)} />;
 
   return (
     <View className="w-full">
-      <Pressable
-        onPress={showBudgetSettings}
-        className="w-full flex-row justify-center items-start gap-2 mb-4"
-      >
+      <Pressable onPress={showBudgetSettings} className="w-full flex-row justify-center items-start gap-2 mb-4">
         <MyIcon type="BACK" size={20} />
-        <MyText className="text-md font-semibold text-my-blue-dark mb-2 w-fit">
-          {activeBudgetName}
-        </MyText>
+        <MyText className="text-md font-semibold text-my-blue-dark mb-2 w-fit">{activeBudgetName}</MyText>
       </Pressable>
       <View className="flex-row justify-around items-center gap-8 w-screen px-6">
-        <View
-          className={`w-1/3 h-14 items-center justify-center border-2 border-my-white-light rounded-md ${daysTillReset > 3 ? "bg-my-red-dark" : "bg-my-green-dark"}`}
-        >
-          <MyText
-            className={`text-xl text-my-white-light py-[.3rem] px-3 font-bold  text-center
-              `}
+        <View className="flex-row gap-2">
+          <Pressable
+            onPress={spendCash}
+            className="bg-my-red-dark border-2 border-my-black-dark rounded-lg p-[1px] h-[3rem] w-[3rem] justify-center items-center"
           >
-            {daysTillReset}{" "}
-            {daysTillReset > 1 ? "days" : daysTillReset === 1 ? "day" : "days"}
-          </MyText>
+            <MyIcon type={"CASH"} size={30} />
+          </Pressable>
+          <Pressable
+            onPress={handleAddCash}
+            className="bg-my-green-dark border-2 border-my-black-dark rounded-lg p-[1px] h-[3rem] w-[3rem] justify-center items-center"
+          >
+            <MyIcon type={"CASH"} size={30} />
+          </Pressable>
         </View>
         <View
           className={`rounded-md border-2 border-my-white-light  h-14 justify-center
@@ -108,12 +96,16 @@ export default function Header({
             ${totalSpendingBudget.toFixed(2)}
           </MyText>
         </View>
-        <Pressable
-          onPress={handleAddCash}
-          className="bg-my-green-dark border-2 border-my-black-dark rounded-lg p-[1px] h-[3rem] w-[3rem] justify-center items-center"
+        <View
+          className={`w-1/3 h-14 items-center justify-center border-2 border-my-white-light rounded-md ${daysTillReset > 3 ? "bg-my-red-dark" : "bg-my-green-dark"}`}
         >
-          <MyIcon type={"CASH"} size={30} />
-        </Pressable>
+          <MyText
+            className={`text-xl text-my-white-light py-[.3rem] px-3 font-bold  text-center
+              `}
+          >
+            {daysTillReset} {daysTillReset > 1 ? "days" : daysTillReset === 1 ? "day" : "days"}
+          </MyText>
+        </View>
       </View>
     </View>
   );

@@ -1,28 +1,14 @@
-import Svg, { Path, Rect, Line } from "react-native-svg";
+import Svg, { Path, Rect, Line, Polyline } from "react-native-svg";
 
-export type MyIconType =
-  | "PAYMENT"
-  | "CASH"
-  | "NVELOPE"
-  | "RESET"
-  | "TAKE"
-  | "DELETE"
-  | "EDIT"
-  | "BACK"
-  | "ADD";
+export type MyIconType = "PAYMENT" | "CASH" | "NVELOPE" | "RESET" | "TAKE" | "DELETE" | "EDIT" | "BACK" | "ADD" | "CHECK";
 
 interface IMyIcon {
   type: MyIconType;
   size?: number;
   color?: string;
-  strokeWidth?: string;
+  strokeWidth?: number;
 }
-export default function MyIcon({
-  type,
-  size = 42,
-  color = "black",
-  strokeWidth = "2",
-}: IMyIcon) {
+export default function MyIcon({ type, size = 42, color = "black", strokeWidth = 2 }: IMyIcon) {
   function getMeta() {
     switch (type) {
       case "PAYMENT":
@@ -66,14 +52,7 @@ export default function MyIcon({
   const meta = getMeta();
   if (type === "EDIT")
     return (
-      <Svg
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke={color}
-        strokeWidth={2}
-      >
+      <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth}>
         <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
         <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
       </Svg>
@@ -92,7 +71,7 @@ export default function MyIcon({
         viewBox="0 0 24 24"
         fill="none"
         stroke={color}
-        stroke-width={strokeWidth}
+        strokeWidth={strokeWidth}
         stroke-linecap="round"
         stroke-linejoin="round"
       >
@@ -101,16 +80,15 @@ export default function MyIcon({
         <Line x1="8" y1="12" x2="16" y2="12" />
       </Svg>
     );
+  else if ((type === "CHECK"))
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth}>
+        <Polyline points="20 6 9 17 4 12" />
+      </Svg>
+    );
 
   return (
-    <Svg
-      width={size}
-      height={size}
-      viewBox={meta!.box}
-      fill="none"
-      stroke={color}
-      strokeWidth={strokeWidth}
-    >
+    <Svg width={size} height={size} viewBox={meta!.box} fill="none" stroke={color} strokeWidth={strokeWidth}>
       <Path d={meta!.path} fill={meta!.fill} />
     </Svg>
   );

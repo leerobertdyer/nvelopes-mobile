@@ -1,12 +1,10 @@
-import { Modal, Pressable, ScrollView, View } from "react-native";
+import {  ScrollView, View } from "react-native";
 import { useBudget } from "../../context/BudgetContext/useBudget";
-import { MyText } from "../../components/MyText";
 import { useEffect, useState } from "react";
 import { createBudget, getAllBudgetData } from "../../firebase/budgets";
 import { BudgetMeta, Interval } from "../../types";
 import Btn from "../../components/Buttons/Btn";
 import Loading from "../../components/Loading";
-import MyIcon from "../../components/MyIcon";
 import BudgetSettingsFields from "../../components/Forms/BudgetSettingsFields";
 import { useAuth } from "../../context/AuthContext/useAuth";
 import EditSpendingBudget from "../../components/Forms/EditSpendingBudget";
@@ -18,8 +16,8 @@ import BudgetDetails from "./BudgetDetails";
 import BudgetSelector from "./BudgetSelector";
 
 export default function BudgetSettings({ handleClose }: { handleClose: () => void }) {
-  const { activeBudgetId, setActiveBudgetId, refetchBudgets } = useBudget();
-
+  const { activeBudgetId, setActiveBudgetId, refetchBudgets, } = useBudget();
+  
   const { user } = useAuth();
 
   const [budget, setBudget] = useState<BudgetMeta | null>(null);
@@ -38,7 +36,6 @@ export default function BudgetSettings({ handleClose }: { handleClose: () => voi
 
   const [showDeleteBudgetConfirm, setShowDeleteBudgetConfirm] = useState(false);
 
-  // Get budget
   useEffect(() => {
     if (!user || !activeBudgetId) {
       setLoading(false);
@@ -54,9 +51,6 @@ export default function BudgetSettings({ handleClose }: { handleClose: () => voi
     setLoading(false);
   }, []);
 
-  async function handleNewBudget() {
-    setShowCreateBudgetModal(true);
-  }
 
   async function handleCreateBudget(): Promise<boolean> {
     if (!user || !newBudgetPayDate || !newBudgetInterval) return false;
@@ -133,18 +127,16 @@ export default function BudgetSettings({ handleClose }: { handleClose: () => voi
     );
 
   if (showBudgetSelector) return <BudgetSelector setShowBudgetSelector={setShowBudgetSelector} />;
-  // if (!budget) return;
   return (
     <>
       <ScrollView contentContainerClassName="justify-center items-center">
         <View className="w-full h-fit m-auto bg-my-blue-dark p-2">
           {budget && (
-            <BudgetDetails
-              budget={budget}
-              handleCalendarChange={handleCalendarChange}
-              newBudgetInterval={newBudgetInterval}
-              setShowDeleteBudgetConfirm={setShowDeleteBudgetConfirm}
-            />
+              <BudgetDetails
+                budget={budget}
+                handleCalendarChange={handleCalendarChange}
+                setShowDeleteBudgetConfirm={setShowDeleteBudgetConfirm}
+              />
           )}
         </View>
       </ScrollView>

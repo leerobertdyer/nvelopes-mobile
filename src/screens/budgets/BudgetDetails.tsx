@@ -10,6 +10,7 @@ import Toast from "react-native-toast-message";
 import { useEffect, useState } from "react";
 import {
   AsyncStorageBackup,
+  editPayDate,
   editPayPeriodInterval,
   getAsyncStorageBackup,
   getSafeBackups,
@@ -25,23 +26,21 @@ import LeaveBudgetModal from "./LeaveBudgetModal";
 import { format } from "date-fns";
 import BudgetSettingsFields from "../../components/Forms/BudgetSettingsFields";
 import { DateData } from "react-native-calendars";
+import MyIcon from "../../components/MyIcon";
+import IntervalSelector from "../../components/Forms/IntervalSelector";
+import { updateBudgetName } from "../../firebase/budgets";
 
 interface IBudgetDetails {
   budget: BudgetMeta;
-  newBudgetInterval: Interval | null;
   handleCalendarChange: (d: DateData) => void;
   setShowDeleteBudgetConfirm: (b: boolean) => void;
 }
 
-export default function BudgetDetails({
-  budget,
-  newBudgetInterval,
-  handleCalendarChange,
-  setShowDeleteBudgetConfirm,
-}: IBudgetDetails) {
+export default function BudgetDetails({ budget, handleCalendarChange, setShowDeleteBudgetConfirm }: IBudgetDetails) {
   const { user } = useAuth();
   const { activeBudgetId, budgets, setActiveBudgetId } = useBudget();
-  const { setPayments, setEnvelopes, setTotalSpendingBudget, payDate } = useDatabase();
+  const { setPayments, setEnvelopes, setTotalSpendingBudget, payDate, payPeriodInterval, setPayDate, setPayPeriodInterval } =
+    useDatabase();
 
   const isOwner = user && budget && budget.ownerId === user.uid;
   const isMember = user && budget && budget.memberIds.includes(user.uid) && !isOwner;
@@ -61,6 +60,16 @@ export default function BudgetDetails({
   // asyncStorageBackup for undo last restore
   const [asyncStorageBackup, setAsyncStorageBackup] = useState<AsyncStorageBackup | null>(null);
   const [safeBackups, setSafeBackups] = useState<Array<BackupData & { id: string }>>([]);
+
+  // Show Budget Inputs
+  const [showEditName, setShowEditName] = useState(false);
+  const [showEditInterval, setShowEditInterval] = useState(false);
+  const [showEditPayDate, setShowEditPaydate] = useState(false);
+
+  // Budget State
+  const [newBudgetName, setNewBudgetName] = useState(budget.name);
+  const [newBudgetInterval, setNewBudgetInterval] = useState(payPeriodInterval);
+  const [newBudgetPayDate, setNewBudgetPayDate] = useState(payDate);
 
   // Load safe backups for active budget and check for localStorage backup
   useEffect(() => {
@@ -106,13 +115,7 @@ export default function BudgetDetails({
   }
 
   async function handleInvite() {
-    if (!user || !activeBudgetId || !shareEmail.trim()) {
-      Toast.show({
-        type: "error",
-        text1: "Please enter a valid email address",
-      });
-      return;
-    }
+    if (!user || !activeBudgetId || !shareEmail.trim()) return;
     setSharing(true);
     const toEmail = shareEmail.trim();
     const budgetName = budgets.find((b) => b.id === activeBudgetId)?.name ?? "Budget";
@@ -160,8 +163,16 @@ export default function BudgetDetails({
     }
   }
 
-  function handleSetBudget(b: BudgetMeta) {
-    setActiveBudgetId(b.id);
+  async function handleSaveOrCancel() {
+    if (!activeBudgetId || !user) return;
+    if (newBudgetName !== budget.name) await updateBudgetName(activeBudgetId, user?.uid, newBudgetName);
+    if (newBudgetInterval !== payPeriodInterval) await editPayPeriodInterval(newBudgetInterval, activeBudgetId);
+    if (newBudgetPayDate && newBudgetPayDate !== payDate) await editPayDate(newBudgetPayDate?.toDate(), activeBudgetId);
+    setPayPeriodInterval(newBudgetInterval);
+    setPayDate(newBudgetPayDate);
+    setShowEditName(false);
+    setShowEditInterval(false);
+    setShowEditPaydate(false);
   }
 
   if (sharing) return <Loading text="Sharing..." />;
@@ -184,19 +195,60 @@ export default function BudgetDetails({
       />
     );
 
+  const budgetHasChanged =
+    newBudgetName !== budget.name || newBudgetInterval !== payPeriodInterval || newBudgetPayDate !== payDate;
+
   return (
     <View className="w-full items-center gap-2 mt-4 py-[1rem]">
+      {budgetHasChanged ? (
+        <Btn h="h-[2.5rem]" color="gold" text="Save" onPress={handleSaveOrCancel} />
+      ) : (
+        <MyText className="text-2xl text-center">Budget Settings</MyText>
+      )}
       <View className="w-full gap-2 items-center">
-        <BudgetSettingsFields
-          mode="edit"
-          intervalValue={newBudgetInterval}
-          onIntervalChange={(i) => editPayPeriodInterval(i, activeBudgetId!)}
-          budgetMeta={budget}
-          setBudgetMeta={handleSetBudget} // TODO: fix this
-          payDate={payDate?.toDate() ?? null}
-          onPayDateChange={handleCalendarChange}
-          onSave={() => {}}
-        />
+        {!showEditName ? (
+          <View className="flex-row items-center w-[20rem] justify-between">
+            <View className="flex-row justify-between flex-1 mr-2">
+              <MyText className="text-my-black-light" numberOfLines={1}>
+                Name:{" "}
+              </MyText>
+              <MyText className="text-my-white-dark">{budget.name}</MyText>
+            </View>
+            <Pressable onPress={() => setShowEditName(true)}>
+              <MyIcon type="EDIT" size={20} />
+            </Pressable>
+          </View>
+        ) : (
+          <Input placeholder={budget.name} value={newBudgetName} onChange={(v) => setNewBudgetName(v)} />
+        )}
+        {!showEditInterval ? (
+          <View className="flex-row items-center w-[20rem] justify-between">
+            <View className="flex-row justify-between flex-1 mr-2">
+              <MyText className="text-my-black-light">Budget Period: </MyText>
+              <MyText className="text-my-white-dark">{payPeriodInterval?.toLowerCase()}</MyText>
+            </View>
+            <Pressable onPress={() => setShowEditInterval(true)}>
+              <MyIcon type="EDIT" size={20} />
+            </Pressable>
+          </View>
+        ) : (
+          <IntervalSelector value={newBudgetInterval} onChange={handleSaveOrCancel} />
+        )}
+
+        {!showEditPayDate && payDate ? (
+          <View className="flex-row items-center w-[20rem] justify-between">
+            <View className="flex-row justify-between flex-1 mr-2">
+              <MyText className="text-my-black-light">Paydate based off: </MyText>
+              <MyText className="text-my-white-dark">{format(payDate.toDate(), "E MM-dd-yy")}</MyText>
+            </View>
+            <Pressable onPress={() => setShowEditName(true)}>
+              <MyIcon type="EDIT" size={20} />
+            </Pressable>
+          </View>
+        ) : (
+          <Input placeholder={budget.name} value={newBudgetName} onChange={(v) => setNewBudgetName(v)} />
+        )}
+
         {isOwner && budget.memberIds.filter((id) => id !== budget.ownerId).length > 0 && (
           <View className="w-full max-w-[20rem] gap-1 bg-my-white-dark/30 rounded-md mb-2">
             <View className="bg-my-black-base rounded-t-md gap-2 py-2">

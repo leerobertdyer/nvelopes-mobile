@@ -40,7 +40,7 @@ export default function Btn({
   return (
     <Pressable
       disabled={disabled}
-      className={`rounded-lg ${h} ${w} max-w-[20rem] p-2 items-center justify-center m-auto
+      className={`rounded-lg ${h} ${w} max-w-[20rem] p-2 items-center justify-center mx-auto
           disabled:opacity-40
               ${bgColor()}
               ${border}`
