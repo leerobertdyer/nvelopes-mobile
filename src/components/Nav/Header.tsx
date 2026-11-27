@@ -10,8 +10,10 @@ import { useBudget } from "../../context/BudgetContext/useBudget";
 
 export default function Header({
   handleAddCash,
+  handleSpendCash,
   showBudgetSettings,
 }: {
+  handleSpendCash: () => void;
   handleAddCash: () => void;
   showBudgetSettings: () => void;
 }) {
@@ -59,53 +61,76 @@ export default function Header({
     setDaysTillReset(diffDays >= 0 ? diffDays + 1 : 0);
   }, [payPeriodInterval, payDate, totalSpendingBudget]);
 
-  async function spendCash() {}
-
   if (showEditSpendingBudget) return <EditSpendingBudget handleBack={() => setShowEditSpendingBudget(false)} />;
 
-  return (
-    <View className="w-full">
+  function BackButton() {
+    return (
       <Pressable onPress={showBudgetSettings} className="w-full flex-row justify-center items-start gap-2 mb-4">
         <MyIcon type="BACK" size={20} />
         <MyText className="text-md font-semibold text-my-blue-dark mb-2 w-fit">{activeBudgetName}</MyText>
       </Pressable>
-      <View className="flex-row justify-around items-center gap-8 w-screen px-6">
-        <View className="flex-row gap-2">
-          <Pressable
-            onPress={spendCash}
-            className="bg-my-red-dark border-2 border-my-black-dark rounded-lg p-[1px] h-[3rem] w-[3rem] justify-center items-center"
-          >
-            <MyIcon type={"CASH"} size={30} />
-          </Pressable>
-          <Pressable
-            onPress={handleAddCash}
-            className="bg-my-green-dark border-2 border-my-black-dark rounded-lg p-[1px] h-[3rem] w-[3rem] justify-center items-center"
-          >
-            <MyIcon type={"CASH"} size={30} />
-          </Pressable>
-        </View>
-        <View
-          className={`rounded-md border-2 border-my-white-light  h-14 justify-center
+    );
+  }
+
+  function DayCounter() {
+    return (
+      <View
+        className={`mr-4 w-1/3 h-14 items-center justify-center border-2 border-my-white-light rounded-md ${daysTillReset > 3 ? "bg-my-red-dark" : "bg-my-green-dark"}`}
+      >
+        <MyText
+          className={`text-xl text-my-white-light py-[.3rem] px-3 font-bold  text-center
+              `}
+        >
+          {daysTillReset} {daysTillReset > 1 ? "days" : daysTillReset === 1 ? "day" : "days"}
+        </MyText>
+      </View>
+    );
+  }
+
+
+  function BudgetDisplay() {
+    return (
+      <View
+        className={`rounded-md border-2 border-my-white-light  h-14 justify-center 
             ${totalSpendingBudget < 0 ? "bg-my-red-dark" : totalSpendingBudget === 0 ? "bg-my-black-light" : "bg-my-green-dark"}`}
-        >
-          <MyText
-            onPress={() => setShowEditSpendingBudget(true)}
-            className={`text-xl text-my-white-light py-[.3rem] px-3 font-bold text-center
+      >
+        <MyText
+          onPress={() => setShowEditSpendingBudget(true)}
+          className={`text-xl text-my-white-light py-[.3rem] px-3 font-bold text-center
               `}
-          >
-            ${totalSpendingBudget.toFixed(2)}
-          </MyText>
-        </View>
-        <View
-          className={`w-1/3 h-14 items-center justify-center border-2 border-my-white-light rounded-md ${daysTillReset > 3 ? "bg-my-red-dark" : "bg-my-green-dark"}`}
         >
-          <MyText
-            className={`text-xl text-my-white-light py-[.3rem] px-3 font-bold  text-center
-              `}
-          >
-            {daysTillReset} {daysTillReset > 1 ? "days" : daysTillReset === 1 ? "day" : "days"}
-          </MyText>
-        </View>
+          ${totalSpendingBudget.toFixed(2)}
+        </MyText>
+      </View>
+    );
+  }
+
+  function AddOrRemoveCash() {
+    return (
+      <View className="flex-row gap-2">
+        <Pressable
+          onPress={handleSpendCash}
+          className="bg-my-red-light border-2 border-my-black-dark rounded-lg p-[1px] h-[3rem] w-[3rem] justify-center items-center"
+        >
+          <MyIcon type={"CASH"} size={30} strokeWidth={6} />
+        </Pressable>
+        <Pressable
+          onPress={handleAddCash}
+          className="bg-my-green-light border-2 border-my-black-dark rounded-lg p-[1px] h-[3rem] w-[3rem] justify-center items-center"
+        >
+          <MyIcon type={"CASH"} size={30} strokeWidth={6}/>
+        </Pressable>
+      </View>
+    );
+  }
+
+  return (
+    <View className="w-full">
+      <BackButton />
+      <View className="flex-row justify-center items-center gap-2 w-screen px-6">
+        <DayCounter />
+        <BudgetDisplay />
+        <AddOrRemoveCash />
       </View>
     </View>
   );

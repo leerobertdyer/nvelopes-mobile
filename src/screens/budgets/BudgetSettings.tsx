@@ -1,4 +1,4 @@
-import {  ScrollView, View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { useBudget } from "../../context/BudgetContext/useBudget";
 import { useEffect, useState } from "react";
 import { createBudget, getAllBudgetData } from "../../firebase/budgets";
@@ -16,8 +16,8 @@ import BudgetDetails from "./BudgetDetails";
 import BudgetSelector from "./BudgetSelector";
 
 export default function BudgetSettings({ handleClose }: { handleClose: () => void }) {
-  const { activeBudgetId, setActiveBudgetId, refetchBudgets, } = useBudget();
-  
+  const { activeBudgetId, setActiveBudgetId, refetchBudgets } = useBudget();
+
   const { user } = useAuth();
 
   const [budget, setBudget] = useState<BudgetMeta | null>(null);
@@ -50,7 +50,6 @@ export default function BudgetSettings({ handleClose }: { handleClose: () => voi
 
     setLoading(false);
   }, []);
-
 
   async function handleCreateBudget(): Promise<boolean> {
     if (!user || !newBudgetPayDate || !newBudgetInterval) return false;
@@ -128,23 +127,17 @@ export default function BudgetSettings({ handleClose }: { handleClose: () => voi
 
   if (showBudgetSelector) return <BudgetSelector setShowBudgetSelector={setShowBudgetSelector} />;
   return (
-    <>
+    <View className="justify-between h-full">
       <ScrollView contentContainerClassName="justify-center items-center">
-        <View className="w-full h-fit m-auto bg-my-blue-dark p-2">
-          {budget && (
-              <BudgetDetails
-                budget={budget}
-                handleCalendarChange={handleCalendarChange}
-                setShowDeleteBudgetConfirm={setShowDeleteBudgetConfirm}
-              />
-          )}
+        <View className="w-[90%] h-fit mb-2 border-2 rounded-md">
+          {budget && <BudgetDetails setShowDeleteBudgetConfirm={setShowDeleteBudgetConfirm} />}
         </View>
       </ScrollView>
-      <View className="gap-2 mt-4">
-        <Btn text="Switch Budgets" color="green" onPress={() => setShowBudgetSelector(true)} />
-        <Btn text="New Budget" color="gold" onPress={() => setShowCreateBudgetModal(true)} />
-        <Btn text="Go Back" color="red" onPress={() => handleClose()} />
+      <View className="gap-2 mb-4">
+        <Btn text="New Budget" h="h-[3rem]" color="green" onPress={() => setShowCreateBudgetModal(true)} />
+        <Btn text="Switch Budgets" h="h-[3rem]" color="gold" onPress={() => setShowBudgetSelector(true)} />
+        <Btn text="Back" h="h-[3rem]" color="red" onPress={() => handleClose()} />
       </View>
-    </>
+    </View>
   );
 }

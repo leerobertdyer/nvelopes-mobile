@@ -10,6 +10,7 @@ interface IntervalSelectorProps {
   onChange: (interval: Interval) => void;
   label?: string;
   className?: string;
+  onBack?: () => void;
 }
 
 /**
@@ -23,14 +24,8 @@ export default function IntervalSelector({
   className = "",
 }: IntervalSelectorProps) {
   return (
-    <View
-      className={`bg-my-black-base w-full p-2 rounded-md my-4 items-center ${className}`}
-    >
-      {label && (
-        <MyText className="text-my-white-dark text-center w-full">
-          {label}
-        </MyText>
-      )}
+    <View className={`w-full p-2 rounded-md my-4 items-center ${className}`}>
+      {label && <MyText className="text-my-white-dark text-center w-full">{label}</MyText>}
       <Picker
         style={{
           width: "70%",

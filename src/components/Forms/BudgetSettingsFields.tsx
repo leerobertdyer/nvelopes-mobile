@@ -94,10 +94,7 @@ export default function BudgetSettingsFields({
   return (
     <View className="items-center w-full h-fit gap-4 mb-4">
       {budgetMeta && mode === "edit" && (
-        <View className="w-full items-center gap-[3px]">
-          <MyText className="text-my-black-base">Budget name: {budgetMeta.name}</MyText>
-          <Btn color="gold" text="Edit Name" onPress={() => setEditingBudgetName(true)} />
-        </View>
+        <Btn h="h-[2.5rem[" color="gold" text="Edit Name" onPress={() => setEditingBudgetName(true)} />
       )}
       {editingBudgetName && (
         <Modal>
@@ -146,10 +143,7 @@ export default function BudgetSettingsFields({
           </View>
         </Modal>
       ) : (
-        <View className="w-full items-center gap-[3px]">
-          <MyText className="text-my-black-base">Budget Interval: {payPeriodInterval?.toLowerCase()}</MyText>
-          <Btn color="gold" text="Edit Interval" onPress={() => setShowIntervalSelector(true)} />
-        </View>
+        <Btn color="gold" text="Edit Interval" h="h-[2.5rem]" onPress={() => setShowIntervalSelector(true)} />
       )}
       {showPayDateCalendar ? (
         <Modal>
@@ -191,10 +185,7 @@ export default function BudgetSettingsFields({
           </View>
         </Modal>
       ) : (
-        <View className="w-full items-center gap-[3px]">
-          <MyText className="text-my-black-base">Paydate: {payDate?.toDateString()}</MyText>
-          <Btn text="Change Pay Date" color="gold" onPress={() => setShowPayDateCalendar(true)} />
-        </View>
+        <Btn text="Change Pay Date" h="h-[2.5rem]" color="gold" onPress={() => setShowPayDateCalendar(true)} />
       )}
     </View>
   );

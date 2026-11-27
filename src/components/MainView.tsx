@@ -40,12 +40,7 @@ import AddCashToEnvelopeForm from "./Forms/AddCashToEnvelopeForm";
 import Header from "./Nav/Header";
 import { navigationRef } from "../../App";
 import Toast from "react-native-toast-message";
-import {
-  applyAmountToTotal,
-  computeUpdatedPayment,
-  getOriginalIdFromVirtualId,
-  togglePaidDates,
-} from "../util/paymentUtils";
+import { applyAmountToTotal, computeUpdatedPayment, getOriginalIdFromVirtualId, togglePaidDates } from "../util/paymentUtils";
 import { SNOWBALL_PAYMENT_ID } from "../constants";
 import NvelopesContainer from "./Nvelopes/NvelopesContainer";
 import MainEnvelope from "./Nvelopes/MainNvelope";
@@ -54,6 +49,7 @@ import ContentSelector from "./ContentSelector";
 import Debt from "../screens/Debt";
 import Settings from "../screens/Settings";
 import BudgetSettings from "../screens/budgets/BudgetSettings";
+import SpendCashForm from "./Forms/SpendCashForm";
 
 export default function MainView() {
   const { user } = useAuth();
@@ -80,6 +76,7 @@ export default function MainView() {
   const [isEditingEnvelope, setIsEditingEnvelope] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isAddingCash, setIsAddingCash] = useState(false);
+  const [isSpendingCash, setIsSpendingCash] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showBudgetWarning, setShowBudgetWarning] = useState(false);
   const [cashName, setCashName] = useState("");
@@ -89,9 +86,7 @@ export default function MainView() {
   const [isAddingCashToEnvelope, setIsAddingCashToEnvelope] = useState(false);
   const [showClearEnvelopes, setShowClearNvelopes] = useState(false);
   const [dueFundPayment, setDueFundPayment] = useState<Payment | null>(null);
-  const [dismissedDuePayments, setDismissedDuePayments] = useState<Set<string>>(
-    new Set(),
-  );
+  const [dismissedDuePayments, setDismissedDuePayments] = useState<Set<string>>(new Set());
   const [showBudgetSettings, setShowBudgetSettings] = useState(false);
   const [pendingPayoff, setPendingPayoff] = useState<{
     paidOffPayment: Payment;
@@ -104,15 +99,9 @@ export default function MainView() {
   // Only ever show current pay period's payments (derived, never full list)
   const paymentsThisPeriod = useMemo(() => {
     if (!payDate || !payments?.length || !payPeriodInterval) return [];
-    const virtual = getVirtualPaymentsForCurrentPeriod(
-      payments,
-      payPeriodInterval,
-      payDate,
-    );
+    const virtual = getVirtualPaymentsForCurrentPeriod(payments, payPeriodInterval, payDate);
     // Hide paid-off debts from main payment view (they appear on Debt page)
-    return virtual.filter(
-      (p) => !(p.type === "DEBT" && p.total != null && p.total <= 0),
-    );
+    return virtual.filter((p) => !(p.type === "DEBT" && p.total != null && p.total <= 0));
   }, [payments, payDate, payPeriodInterval]);
 
   // Check for due Fund (planned expense) payments
@@ -132,7 +121,6 @@ export default function MainView() {
     if (duePayment && !dueFundPayment) {
       setDueFundPayment(duePayment);
     }
-
   }, [payments, dismissedDuePayments, dueFundPayment]);
 
   async function handleEditPayment(p: Payment) {
@@ -143,9 +131,7 @@ export default function MainView() {
   // Handler for marking a Fund (planned expense) payment as fully paid
   async function handleMarkFundPaid(payment: Payment) {
     if (!user) return;
-    const updatedPayments = payments.map((p) =>
-      p.id === payment.id ? { ...p, paid: true } : p,
-    );
+    const updatedPayments = payments.map((p) => (p.id === payment.id ? { ...p, paid: true } : p));
     setPayments(updatedPayments);
     await editPayments(updatedPayments, activeBudgetId!);
     setDueFundPayment(null);
@@ -158,9 +144,7 @@ export default function MainView() {
     // Extend by 1 month by default
     const newDueDate = addMonths(payment.dueDate.toDate(), 1);
     const updatedPayments = payments.map((p) =>
-      p.id === payment.id
-        ? { ...p, dueDate: firestore.Timestamp.fromDate(newDueDate) }
-        : p,
+      p.id === payment.id ? { ...p, dueDate: firestore.Timestamp.fromDate(newDueDate) } : p,
     );
     setPayments(updatedPayments);
     await editPayments(updatedPayments, activeBudgetId!);
@@ -229,11 +213,7 @@ export default function MainView() {
     const occurrenceKey = startOfDay(occurrenceDate).getTime().toString();
 
     const updatedSnowball = togglePaidDates(snowballPayment, occurrenceDate);
-    const updatedTarget = applyAmountToTotal(
-      targetDebt,
-      virtualPayment.amount,
-      occurrenceKey,
-    );
+    const updatedTarget = applyAmountToTotal(targetDebt, virtualPayment.amount, occurrenceKey);
 
     let updatedPayments: Payment[] = payments.map((p) => {
       if (p.id === SNOWBALL_PAYMENT_ID) return updatedSnowball;
@@ -243,11 +223,7 @@ export default function MainView() {
 
     if (updatedTarget.total! <= 0) {
       const remainder = virtualPayment.amount - (targetDebt.total ?? 0);
-      updatedPayments = await handleDebtPayoff(
-        targetDebt,
-        updatedPayments,
-        remainder,
-      );
+      updatedPayments = await handleDebtPayoff(targetDebt, updatedPayments, remainder);
     }
     setPayments(updatedPayments);
     await editDatabaseWithTransaction({
@@ -300,17 +276,10 @@ export default function MainView() {
   }
 
   const payoffCandidates = pendingPayoff
-    ? getRemainingDebtsForSnowball(
-        pendingPayoff.paymentsAtPayoff,
-        pendingPayoff.paidOffPayment.id,
-      )
+    ? getRemainingDebtsForSnowball(pendingPayoff.paymentsAtPayoff, pendingPayoff.paidOffPayment.id)
     : [];
 
-  async function handleConfirmPayoff(choice: {
-    roll: boolean;
-    targetId: string | null;
-    surplus: SurplusDisposition;
-  }) {
+  async function handleConfirmPayoff(choice: { roll: boolean; targetId: string | null; surplus: SurplusDisposition }) {
     if (!pendingPayoff || !user || !activeBudgetId) return;
     const { paidOffPayment, paymentsAtPayoff, remainder } = pendingPayoff;
     const { roll, targetId, surplus } = choice;
@@ -318,11 +287,7 @@ export default function MainView() {
     let workingPayments = paymentsAtPayoff;
 
     if (roll && targetId) {
-      workingPayments = rollSnowballOnPayoff(
-        workingPayments,
-        paidOffPayment,
-        payDate,
-      );
+      workingPayments = rollSnowballOnPayoff(workingPayments, paidOffPayment, payDate);
       const nextTarget = workingPayments.find((p) => p.id === targetId);
       setSnowballTargetPaymentId(targetId);
       await addTransaction(
@@ -361,11 +326,7 @@ export default function MainView() {
         text1: `$${remainder.toFixed(2)} returned to budget`,
       });
     } else if (remainder > 0 && surplus === "nextTarget" && targetId) {
-      const result = applyPayoffSurplusToTarget(
-        workingPayments,
-        targetId,
-        remainder,
-      );
+      const result = applyPayoffSurplusToTarget(workingPayments, targetId, remainder);
       workingPayments = result.payments;
       await addTransaction(
         {
@@ -424,21 +385,12 @@ export default function MainView() {
     const originalPayment = payments.find((p) => p.id === originalId);
     if (!originalPayment) return;
 
-    const updatedPayment = computeUpdatedPayment(
-      originalPayment,
-      virtualPayment,
-    );
-    let updatedPayments: Payment[] = payments.map((p) =>
-      p.id === originalId ? updatedPayment : p,
-    );
+    const updatedPayment = computeUpdatedPayment(originalPayment, virtualPayment);
+    let updatedPayments: Payment[] = payments.map((p) => (p.id === originalId ? updatedPayment : p));
 
     // Is Debt Paid Off?
     const paidOffPayment = updatedPayments.find(
-      (p) =>
-        p.id === originalId &&
-        p.type === "DEBT" &&
-        p.total != null &&
-        p.total <= 0,
+      (p) => p.id === originalId && p.type === "DEBT" && p.total != null && p.total <= 0,
     );
     if (paidOffPayment) {
       updatedPayments = await handleDebtPayoff(paidOffPayment, updatedPayments);
@@ -496,12 +448,7 @@ export default function MainView() {
       func: () => editEnvelopes(newEnvelopes, activeBudgetId!),
     });
 
-    await updateBudgetStateAndDBB(
-      Number(n.total) * -1,
-      activeBudgetId!,
-      totalSpendingBudget,
-      setTotalSpendingBudget,
-    );
+    await updateBudgetStateAndDBB(Number(n.total) * -1, activeBudgetId!, totalSpendingBudget, setTotalSpendingBudget);
     resetState();
     Toast.show({ type: "success", text1: "Nvelope created" });
   }
@@ -515,9 +462,7 @@ export default function MainView() {
     try {
       setLoadingText("Deleting Nvelope...");
       setShowLoading(true);
-      const newEnvelopes = [...envelopes].filter(
-        (e) => e.id !== envelopeToEdit.id,
-      );
+      const newEnvelopes = [...envelopes].filter((e) => e.id !== envelopeToEdit.id);
       setEnvelopes(newEnvelopes);
       await editDatabaseWithTransaction({
         t: {
@@ -586,18 +531,11 @@ export default function MainView() {
   }
 
   // Edit just the envelopes without affecting budget
-  async function editEnvelope(
-    n: Nvelope,
-    isSpending: boolean,
-    spendDesc?: string,
-    amount?: number,
-  ) {
+  async function editEnvelope(n: Nvelope, isSpending: boolean, spendDesc?: string, amount?: number) {
     if (!user) return;
     const originalEnvelope = envelopes.find((e) => e.id === n.id);
     if (!originalEnvelope) return;
-    setLoadingText(
-      isSpending ? `Spending from ${n.name}...` : "Editing Nvelope...",
-    );
+    setLoadingText(isSpending ? `Spending from ${n.name}...` : "Editing Nvelope...");
     setShowLoading(true);
     const newEnvelopes = [...envelopes].map((e) => (e.id === n.id ? n : e));
     setEnvelopes(newEnvelopes);
@@ -680,29 +618,23 @@ export default function MainView() {
     Toast.show({ type: "success", text1: "Nvelopes and Payments reset" });
   }
 
-  async function addCashToDb() {
+  async function editCash(spending: boolean) {
     if (cashAmount <= 0 || !cashName || !user) return;
-    setLoadingText("Adding Cash...");
+    setLoadingText(spending ? "Spending Cash..." : "Adding Cash...");
     setShowLoading(true);
     const randomId = randomUUID();
     const date = firestore.Timestamp.fromDate(new Date());
     await editDatabaseWithTransaction({
       t: {
         id: createTransactionId(user),
-        type: "CASH",
+        type: spending ? "SPEND" : "CASH",
         amount: cashAmount,
-        description: `Added Cash: ${cashName}`,
+        description: spending ? `Spent Cash Reason: ${cashName}` : `Added Cash: ${cashName}`,
         createdAt: firestore.Timestamp.now(),
         createdBy: user.email ?? user.uid,
       },
       budgetId: activeBudgetId!,
-      func: () =>
-        updateBudgetStateAndDBB(
-          cashAmount,
-          activeBudgetId!,
-          totalSpendingBudget,
-          setTotalSpendingBudget,
-        ),
+      func: () => updateBudgetStateAndDBB(cashAmount, activeBudgetId!, totalSpendingBudget, setTotalSpendingBudget),
     });
     resetState();
     Toast.show({ type: "success", text1: "Cash added to budget" });
@@ -718,15 +650,8 @@ export default function MainView() {
     if (!n || cashAmount <= 0 || !user) return;
     setLoadingText("Filling Nvelope...");
     setShowLoading(true);
-    const newEnvelopes = [...envelopes].map((e) =>
-      e.id === n.id ? { ...n, total: n.total + cashAmount } : e,
-    );
-    await updateBudgetStateAndDBB(
-      cashAmount * -1,
-      activeBudgetId!,
-      totalSpendingBudget,
-      setTotalSpendingBudget,
-    );
+    const newEnvelopes = [...envelopes].map((e) => (e.id === n.id ? { ...n, total: n.total + cashAmount } : e));
+    await updateBudgetStateAndDBB(cashAmount * -1, activeBudgetId!, totalSpendingBudget, setTotalSpendingBudget);
     await editDatabaseWithTransaction({
       t: {
         id: createTransactionId(user),
@@ -745,70 +670,60 @@ export default function MainView() {
     resetState();
   }
 
-  if (showBudgetSettings) return <BudgetSettings handleClose={() => setShowBudgetSettings(false)} />
+  if (showBudgetSettings) return <BudgetSettings handleClose={() => setShowBudgetSettings(false)} />;
 
   if (showClearEnvelopes)
     return (
       <View className="justify-center items-center bg-my-blue-dark h-fit w-full m-auto p-6">
         <View className="items-center w-fit mx-auto bg-my-black-dark/60 p-4 rounded-md">
           <MyText className="text-my-white-light text-xl m-2">
-            Reset <MyText className="text-my-blue-light">Nvelope</MyText>{" "}
-            amounts to <MyText className="text-my-green-base">$0.00</MyText>
+            Reset <MyText className="text-my-blue-light">Nvelope</MyText> amounts to{" "}
+            <MyText className="text-my-green-base">$0.00</MyText>
           </MyText>
           <MyText className="text-my-white-light text-xl m-2">
             Mark <MyText className="text-my-red-light">ALL Payments</MyText>
             <MyText className="text-gray-400"> unpaid</MyText>.
           </MyText>
-          <MyText className="text-my-white-light text-sm mt-2">
-            (Your budget total will be unaffected)
-          </MyText>
+          <MyText className="text-my-white-light text-sm mt-2">(Your budget total will be unaffected)</MyText>
         </View>
         <View className="w-full mt-8 gap-4">
-          <Btn
-            color="gold"
-            text="Clear"
-            onPress={handleResetEnvelopesAndPaid}
-          />
-          <Btn
-            color="red"
-            text="Go Back"
-            onPress={() => setShowClearNvelopes(false)}
-          />
+          <Btn color="gold" text="Clear" onPress={handleResetEnvelopesAndPaid} />
+          <Btn color="red" text="Go Back" onPress={() => setShowClearNvelopes(false)} />
         </View>
       </View>
     );
 
   if (showDeletePayment && payDate && paymentToEdit) {
     return (
-        <View className="w-full h-full bg-my-black-dark items-center justify-center">
-          <View className=" w-full h-[50%] justify-center items-center p-4">
-            <MyText className="p-4 rounded-md text-my-white-dark w-full text-center">
-              Are you sure you want to delete "{paymentToEdit.name}"?
-            </MyText>
-            <MyText className="text-xs text-my-white-light text-center mb-4">
-              Removing this payment will not change your available budget.
-            </MyText>
-            <View className="flex gap-2 items-center justify-center w-[95%]">
-              <Btn
-                text="Yes"
-                color="gold"
-                onPress={() => {
-                  deleteBill();
-                  setShowDeletePayment(false);
-                  resetPaymentState();
-                }}
-              />
-              <Btn
-                text="Go Back"
-                color="red"
-                onPress={() => {
-                  setShowDeletePayment(false);
-                  resetPaymentState();
-                }}
-              />
-            </View>
+      <View className="w-full h-full bg-my-black-dark items-center justify-center">
+        <View className=" w-full h-[50%] justify-center items-center p-4">
+          <MyText className="p-4 rounded-md text-my-white-dark w-full text-center">
+            Are you sure you want to delete "{paymentToEdit.name}"?
+          </MyText>
+          <MyText className="text-xs text-my-white-light text-center mb-4">
+            Removing this payment will not change your available budget.
+          </MyText>
+          <View className="flex gap-2 items-center justify-center w-[95%]">
+            <Btn
+              text="Yes"
+              color="gold"
+              onPress={() => {
+                deleteBill();
+                setShowDeletePayment(false);
+                resetPaymentState();
+              }}
+            />
+            <Btn
+              text="Go Back"
+              color="red"
+              onPress={() => {
+                setShowDeletePayment(false);
+                resetPaymentState();
+              }}
+            />
           </View>
         </View>
+      </View>
     );
   }
 
@@ -866,14 +781,7 @@ export default function MainView() {
           )}
         </>
       );
-    } else if (user)
-      return (
-        <PaymentForm
-          paymentToEdit={null}
-          user={user}
-          handleBack={resetPaymentState}
-        />
-      );
+    } else if (user) return <PaymentForm paymentToEdit={null} user={user} handleBack={resetPaymentState} />;
   }
 
   if (isEditingEnvelope && envelopeToEdit) {
@@ -895,12 +803,7 @@ export default function MainView() {
     return (
       <>
         {showLoading && <Loading text={loadingText} />}
-        <MainEnvelope
-          kind="addEnvelope"
-          envelope={emptyEnvelope}
-          handleSaveEnvelope={saveNewEnvelope}
-          handleBack={resetState}
-        />
+        <MainEnvelope kind="addEnvelope" envelope={emptyEnvelope} handleSaveEnvelope={saveNewEnvelope} handleBack={resetState} />
       </>
     );
   }
@@ -912,11 +815,7 @@ export default function MainView() {
       >
         <Text>You have nothing left in your budget!</Text>
         <Text>Try moving some money from another nvelope</Text>
-        <Button
-          title="Go Back"
-          onPress={() => setShowBudgetWarning(false)}
-          color="green"
-        />
+        <Button title="Go Back" onPress={() => setShowBudgetWarning(false)} color="green" />
       </View>
     );
   }
@@ -927,7 +826,22 @@ export default function MainView() {
         showLoading={showLoading}
         loadingText={loadingText}
         setIsAddingCash={setIsAddingCash}
-        addCashToDb={addCashToDb}
+        addCashToDb={editCash}
+        cashAmount={cashAmount}
+        setCashAmount={setCashAmount}
+        cashName={cashName}
+        setCashName={setCashName}
+      />
+    );
+  }
+
+  if (isSpendingCash) {
+    return (
+      <SpendCashForm
+        showLoading={showLoading}
+        loadingText={loadingText}
+        setIsSpendingCash={setIsSpendingCash}
+        spendCash={editCash}
         cashAmount={cashAmount}
         setCashAmount={setCashAmount}
         cashName={cashName}
@@ -955,13 +869,10 @@ export default function MainView() {
       <View className="w-full text-center items-center flex-1 bg-my-white-light">
         {showLoading && <Loading text={loadingText} />}
         <DraxProvider>
-          <ScrollView
-            bounces={false}
-            className="w-full h-full"
-            contentContainerClassName="items-center"
-          >
+          <ScrollView bounces={false} className="w-full h-full" contentContainerClassName="items-center">
             <Header
-              handleAddCash={handleAddCash}
+              handleAddCash={() => setIsAddingCash(true)}
+              handleSpendCash={() => setIsSpendingCash(true)}
               showBudgetSettings={() => setShowBudgetSettings(true)}
             />
             <View className="my-2" />
@@ -975,12 +886,8 @@ export default function MainView() {
                   })
                 }
               >
-                <MyText className="text-my-green-light underline text-center">
-                  Set your pay date in Settings
-                </MyText>
-                <MyText className="text-sm text-my-white-light text-center">
-                  to see your pay period in the header.
-                </MyText>
+                <MyText className="text-my-green-light underline text-center">Set your pay date in Settings</MyText>
+                <MyText className="text-sm text-my-white-light text-center">to see your pay period in the header.</MyText>
               </Pressable>
             )}
 

@@ -1,5 +1,5 @@
 import { Modal, Pressable, View } from "react-native";
-import { BackupData, BudgetMeta, Interval } from "../../types";
+import { BackupData, BudgetMeta } from "../../types";
 import { MyText } from "../../components/MyText";
 import { useAuth } from "../../context/AuthContext/useAuth";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
@@ -24,26 +24,23 @@ import { Picker } from "@react-native-picker/picker";
 import UndoRestoreLastBackup from "./UndoRestoreLastBackupModal";
 import LeaveBudgetModal from "./LeaveBudgetModal";
 import { format } from "date-fns";
-import BudgetSettingsFields from "../../components/Forms/BudgetSettingsFields";
-import { DateData } from "react-native-calendars";
 import MyIcon from "../../components/MyIcon";
-import IntervalSelector from "../../components/Forms/IntervalSelector";
-import { updateBudgetName } from "../../firebase/budgets";
+import firestore from "@react-native-firebase/firestore";
+import BudgetSettingsFields from "../../components/Forms/BudgetSettingsFields";
+import Spacer from "../../components/Spacer";
+import { getBudgetMeta } from "../../firebase/budgets";
+
+const { Timestamp } = firestore;
 
 interface IBudgetDetails {
-  budget: BudgetMeta;
-  handleCalendarChange: (d: DateData) => void;
   setShowDeleteBudgetConfirm: (b: boolean) => void;
 }
 
-export default function BudgetDetails({ budget, handleCalendarChange, setShowDeleteBudgetConfirm }: IBudgetDetails) {
+export default function BudgetDetails({ setShowDeleteBudgetConfirm }: IBudgetDetails) {
   const { user } = useAuth();
-  const { activeBudgetId, budgets, setActiveBudgetId } = useBudget();
+  const { activeBudgetId, budgets, refetchBudgets } = useBudget();
   const { setPayments, setEnvelopes, setTotalSpendingBudget, payDate, payPeriodInterval, setPayDate, setPayPeriodInterval } =
     useDatabase();
-
-  const isOwner = user && budget && budget.ownerId === user.uid;
-  const isMember = user && budget && budget.memberIds.includes(user.uid) && !isOwner;
 
   // Budget Sharing
   const [sharing, setSharing] = useState(false);
@@ -57,19 +54,33 @@ export default function BudgetDetails({ budget, handleCalendarChange, setShowDel
   // Backups
   const [showUndoConfirm, setShowUndoConfirm] = useState(false);
   const [isLoadingSafeBackups, setIsLoadingSafeBackups] = useState(false);
+  const [showBackupModal, setShowBackupModal] = useState(false);
+
   // asyncStorageBackup for undo last restore
   const [asyncStorageBackup, setAsyncStorageBackup] = useState<AsyncStorageBackup | null>(null);
   const [safeBackups, setSafeBackups] = useState<Array<BackupData & { id: string }>>([]);
 
   // Show Budget Inputs
-  const [showEditName, setShowEditName] = useState(false);
-  const [showEditInterval, setShowEditInterval] = useState(false);
-  const [showEditPayDate, setShowEditPaydate] = useState(false);
+  const [showEditBudget, setShowEditBudget] = useState(false);
 
   // Budget State
-  const [newBudgetName, setNewBudgetName] = useState(budget.name);
+  const [newBudgetName, setNewBudgetName] = useState();
   const [newBudgetInterval, setNewBudgetInterval] = useState(payPeriodInterval);
   const [newBudgetPayDate, setNewBudgetPayDate] = useState(payDate);
+  const [budget, setBudget] = useState<BudgetMeta>();
+
+  async function refreshBudget() {
+    if (!activeBudgetId) return;
+    const newBudget = await getBudgetMeta(activeBudgetId);
+    if (newBudget) {
+      setBudget(newBudget);
+      setNewBudgetName(newBudget!.name);
+    }
+  }
+
+  useEffect(() => {
+    refreshBudget();
+  }, [activeBudgetId]);
 
   // Load safe backups for active budget and check for localStorage backup
   useEffect(() => {
@@ -85,11 +96,18 @@ export default function BudgetDetails({ budget, handleCalendarChange, setShowDel
     loadBackups();
   }, [user, activeBudgetId]);
 
+  const isOwner = user && budget && budget!.ownerId === user.uid;
+  const isMember = user && budget && budget!.memberIds.includes(user.uid) && !isOwner;
+
+  if (!budget) return;
+
   function handleSelectBackup(backupId: string) {
+    console.log("Start:", backupId);
     const backup = safeBackups.find((b) => b.id === backupId);
+    console.log("backeup found? ", backup);
     if (backup) {
       setSelectedSafeBackup(backup);
-    }
+    } else Toast.show({ type: "error", text1: "No Backup Found" });
   }
 
   function handleCloseBackup() {
@@ -163,16 +181,20 @@ export default function BudgetDetails({ budget, handleCalendarChange, setShowDel
     }
   }
 
-  async function handleSaveOrCancel() {
+  function reset() {
+    setPayPeriodInterval(payPeriodInterval);
+    setPayDate(payDate);
+    setNewBudgetName(newBudgetName);
+    setShowEditBudget(false);
+  }
+
+  async function handleSave() {
     if (!activeBudgetId || !user) return;
-    if (newBudgetName !== budget.name) await updateBudgetName(activeBudgetId, user?.uid, newBudgetName);
     if (newBudgetInterval !== payPeriodInterval) await editPayPeriodInterval(newBudgetInterval, activeBudgetId);
     if (newBudgetPayDate && newBudgetPayDate !== payDate) await editPayDate(newBudgetPayDate?.toDate(), activeBudgetId);
-    setPayPeriodInterval(newBudgetInterval);
-    setPayDate(newBudgetPayDate);
-    setShowEditName(false);
-    setShowEditInterval(false);
-    setShowEditPaydate(false);
+    await refetchBudgets();
+    await refreshBudget();
+    reset();
   }
 
   if (sharing) return <Loading text="Sharing..." />;
@@ -195,125 +217,93 @@ export default function BudgetDetails({ budget, handleCalendarChange, setShowDel
       />
     );
 
-  const budgetHasChanged =
-    newBudgetName !== budget.name || newBudgetInterval !== payPeriodInterval || newBudgetPayDate !== payDate;
+  function BudgetSettingsHeader() {
+    return (
+      <Pressable
+        className={`w-full flex-row justify-center items-center gap-2 ${showEditBudget && "mb-4"}`}
+        onPress={showEditBudget ? () => setShowEditBudget(false) : () => setShowEditBudget(true)}
+      >
+        <MyText className="text-2xl text-center">{showEditBudget ? `Edit ${budget!.name}` : "Budget Settings"}</MyText>
+        <MyIcon type={showEditBudget ? "X" : "EDIT"} size={20} strokeWidth={showEditBudget ? 8 : 2} />
+      </Pressable>
+    );
+  }
 
-  return (
-    <View className="w-full items-center gap-2 mt-4 py-[1rem]">
-      {budgetHasChanged ? (
-        <Btn h="h-[2.5rem]" color="gold" text="Save" onPress={handleSaveOrCancel} />
-      ) : (
-        <MyText className="text-2xl text-center">Budget Settings</MyText>
-      )}
-      <View className="w-full gap-2 items-center">
-        {!showEditName ? (
-          <View className="flex-row items-center w-[20rem] justify-between">
-            <View className="flex-row justify-between flex-1 mr-2">
-              <MyText className="text-my-black-light" numberOfLines={1}>
-                Name:{" "}
-              </MyText>
-              <MyText className="text-my-white-dark">{budget.name}</MyText>
-            </View>
-            <Pressable onPress={() => setShowEditName(true)}>
-              <MyIcon type="EDIT" size={20} />
-            </Pressable>
-          </View>
-        ) : (
-          <Input placeholder={budget.name} value={newBudgetName} onChange={(v) => setNewBudgetName(v)} />
-        )}
-        {!showEditInterval ? (
-          <View className="flex-row items-center w-[20rem] justify-between">
-            <View className="flex-row justify-between flex-1 mr-2">
-              <MyText className="text-my-black-light">Budget Period: </MyText>
-              <MyText className="text-my-white-dark">{payPeriodInterval?.toLowerCase()}</MyText>
-            </View>
-            <Pressable onPress={() => setShowEditInterval(true)}>
-              <MyIcon type="EDIT" size={20} />
-            </Pressable>
-          </View>
-        ) : (
-          <IntervalSelector value={newBudgetInterval} onChange={handleSaveOrCancel} />
-        )}
-
-        {!showEditPayDate && payDate ? (
-          <View className="flex-row items-center w-[20rem] justify-between">
-            <View className="flex-row justify-between flex-1 mr-2">
-              <MyText className="text-my-black-light">Paydate based off: </MyText>
-              <MyText className="text-my-white-dark">{format(payDate.toDate(), "E MM-dd-yy")}</MyText>
-            </View>
-            <Pressable onPress={() => setShowEditName(true)}>
-              <MyIcon type="EDIT" size={20} />
-            </Pressable>
-          </View>
-        ) : (
-          <Input placeholder={budget.name} value={newBudgetName} onChange={(v) => setNewBudgetName(v)} />
-        )}
-
-        {isOwner && budget.memberIds.filter((id) => id !== budget.ownerId).length > 0 && (
-          <View className="w-full max-w-[20rem] gap-1 bg-my-white-dark/30 rounded-md mb-2">
-            <View className="bg-my-black-base rounded-t-md gap-2 py-2">
-              <MyText className="text-xs text-center text-my-white-light">Members</MyText>
-            </View>
-            <View className="p-4">
-              {budget.memberIds
-                .filter((id) => id !== budget.ownerId)
-                .map((mid) => (
-                  <Pressable
-                    key={mid}
-                    className="flex flex-row items-center justify-center gap-2 py-1 text-my-white-dark text-sm"
-                    onPress={() => {
-                      console.log("WTH: ", mid);
-                      setMemberToRemove(mid);
-                    }}
-                  >
-                    <MyText className="text-my-black-dark w-fit">{budget.memberEmails?.[mid] ?? mid.slice(0, 8) + "…"}</MyText>
-                    <FontAwesome name="trash" size={18} color="#ad0241" />
-                  </Pressable>
-                ))}
-            </View>
-          </View>
-        )}
+  function BudgetCurrentState() {
+    return (
+      <View className="items-center w-[20rem] justify-between">
+        <View className="flex-row justify-between w-[20rem] border-b-[2px]">
+          <MyText className="text-my-black-light">Name:</MyText>
+          <MyText className="text-my-black-dark" numberOfLines={1}>
+            {budget!.name}
+          </MyText>
+        </View>
+        <View className="flex-row justify-between w-[20rem] border-b-[2px]">
+          <MyText className="text-my-black-light">Budget Period: </MyText>
+          <MyText className="text-my-black-dark">{payPeriodInterval?.toLowerCase()}</MyText>
+        </View>
+        <View className="flex-row justify-between w-[20rem] border-b-[2px]">
+          <MyText className="text-my-black-light">Paydate: </MyText>
+          <MyText className="text-my-black-dark">{format(payDate!.toDate(), "E MM-dd-yy")}</MyText>
+        </View>
       </View>
+    );
+  }
 
-      <View className="w-full gap-4">
-        {activeBudgetId && (
-          <>
-            {isOwner && <Btn text="Share budget" color="green" onPress={() => setShowShareBudgetModal(true)} />}
-            {isOwner && showShareBudgetModal && (
-              <Modal>
-                <View className="h-full w-full justify-center bg-my-black-base">
-                  <View className="bg-my-white-base h-fit w-full p-8 gap-4">
-                    <View className="w-full gap-2 items-center justify-center">
-                      <Input
-                        id="Email to share with"
-                        label="Share budget by email"
-                        placeholder="email@example.com"
-                        value={shareEmail}
-                        onChange={(e) => setShareEmail(e)}
-                      />
-                    </View>
-                    <Btn color="gold" text="Share" onPress={handleInvite} />
-                    <Btn color="red" text="Cancel" onPress={() => setShowShareBudgetModal(false)} />
-                  </View>
-                </View>
-              </Modal>
-            )}
-            {isOwner && <Btn text="Delete this budget" color="red" onPress={() => setShowDeleteBudgetConfirm(true)} />}
-            {isMember && <Btn text="Leave this budget" color="red" onPress={() => setShowLeaveBudgetConfirm(true)} />}
-          </>
-        )}
+  function BudgetMemberDisplay() {
+    return (
+      <View className="w-full max-w-[20rem] gap-1 bg-my-white-dark/30 rounded-md mb-2">
+        <View className="bg-my-black-base rounded-t-md gap-2 py-2">
+          <MyText className="text-xs text-center text-my-white-light">Members</MyText>
+        </View>
+        <View className="p-4">
+          {budget!.memberIds
+            .filter((id) => id !== budget!.ownerId)
+            .map((mid) => (
+              <Pressable
+                key={mid}
+                className="flex flex-row items-center justify-center gap-2 py-1 text-my-white-dark text-sm"
+                onPress={() => {
+                  console.log("WTH: ", mid);
+                  setMemberToRemove(mid);
+                }}
+              >
+                <MyText className="text-my-black-dark w-fit">{budget!.memberEmails?.[mid] ?? mid.slice(0, 8) + "…"}</MyText>
+                <FontAwesome name="trash" size={18} color="#ad0241" />
+              </Pressable>
+            ))}
+        </View>
       </View>
-      <BackupSelectionScreen />
-      {selectedSafeBackup && <BackupSelectionConfirmScreen />}
-      <UndoLastRestoreScreen />
-    </View>
-  );
+    );
+  }
+
+  function ShareBudgetModal() {
+    return (
+      <Modal>
+        <View className="h-full w-full justify-center bg-my-black-base">
+          <View className="bg-my-white-base h-fit w-full p-8 gap-4">
+            <View className="w-full gap-2 items-center justify-center">
+              <Input
+                id="Email to share with"
+                label="Share budget by email"
+                placeholder="email@example.com"
+                value={shareEmail}
+                onChange={(e) => setShareEmail(e)}
+              />
+            </View>
+            <Btn color="gold" text="Share" onPress={handleInvite} />
+            <Btn color="red" text="Cancel" onPress={() => setShowShareBudgetModal(false)} />
+          </View>
+        </View>
+      </Modal>
+    );
+  }
 
   function UndoLastRestoreScreen() {
     if (!asyncStorageBackup) return null;
     return (
       <Pressable
-        className="justify-around w-[80%] max-w-[20rem] h-fit items-center p-2 bg-my-blue-dark rounded-md border-2 border-my-white-dark text-my-white-light my-4 gap-2"
+        className="justify-around w-[80%] max-w-[20rem] h-fit items-center p-2  rounded-md border-2 border-my-white-dark text-my-white-light my-4 gap-2"
         onPress={() => setShowUndoConfirm(true)}
       >
         <MyText className="text-sm font-bold">Undo Last Restore</MyText>
@@ -328,14 +318,12 @@ export default function BudgetDetails({ budget, handleCalendarChange, setShowDel
 
   function BackupSelectionScreen() {
     return (
-      <View className="justify-between items-center w-[80%] p-4 bg-my-black-base rounded-md border-2 border-my-white-dark my-4">
+      <View className="justify-between items-center w-full p-4 bg-my-black-base  gap-4">
         <MyText className="text-sm font-bold text-my-white-light">Revert To A Backup</MyText>
         <MyText className="text-xs text-my-white-base">Restores payments and nvelopes</MyText>
         <View className="w-full">
           {isLoadingSafeBackups ? (
             <MyText className="text-xs py-2">Loading backups...</MyText>
-          ) : safeBackups.length === 0 ? (
-            <MyText className="text-xs py-2 text-gray-400 text-center">No backups yet</MyText>
           ) : (
             <Picker
               style={{
@@ -352,31 +340,91 @@ export default function BudgetDetails({ budget, handleCalendarChange, setShowDel
             </Picker>
           )}
         </View>
+        <Btn onPress={() => setShowBackupModal(false)} color="red" text="Close" />
       </View>
     );
   }
 
   function BackupSelectionConfirmScreen() {
     return (
-      <Modal>
-        <View className="bg-my-white-light h-full w-full justify-center items-center">
-          <View className="w-full h-fit text-center justify-center items-center p-4 bg-my-black-dark">
-            <MyText className="text-xl text-my-red-light">Are you sure??</MyText>
-            <MyText className="text-my-red-light">You can undo this restore if needed.</MyText>
-            <MyText className="text-my-red-light">Your budget will reset to {selectedSafeBackup?.totalSpendingBudget}</MyText>
-            <MyText className="text-my-red-light">
-              You will have {selectedSafeBackup?.payments?.length ?? 0} payments totaling $
-              {(selectedSafeBackup?.payments ?? []).reduce((acc, p) => p.amount + acc, 0).toFixed(2)}
-            </MyText>
-            <MyText>
-              You will have {selectedSafeBackup?.nvelopes?.length ?? 0} nvelopes totaling $
-              {(selectedSafeBackup?.nvelopes ?? []).reduce((acc, p) => p.total + acc, 0).toFixed(2)}
-            </MyText>
+      <View className="bg-my-white-light h-full w-full justify-center items-center">
+        <View className="w-full h-fit text-center justify-center items-center p-4 bg-my-black-dark">
+          <MyText className="text-xl text-my-red-light">Are you sure??</MyText>
+          <MyText className="text-my-white-light">You can undo this restore if needed.</MyText>
+          <MyText className="text-my-white-light">Your budget will reset to {selectedSafeBackup?.totalSpendingBudget}</MyText>
+          <MyText className="text-my-white-light">
+            You will have {selectedSafeBackup?.payments?.length ?? 0} payments totaling $
+            {(selectedSafeBackup?.payments ?? []).reduce((acc, p) => p.amount + acc, 0).toFixed(2)}
+          </MyText>
+          <MyText>
+            You will have {selectedSafeBackup?.nvelopes?.length ?? 0} nvelopes totaling $
+            {(selectedSafeBackup?.nvelopes ?? []).reduce((acc, p) => p.total + acc, 0).toFixed(2)}
+          </MyText>
+          <View className="gap-2 w-full">
             <Btn color="gold" text="Save" onPress={handleRestoreBackup} />
-            <Btn color="red" text="Go Back" onPress={handleCloseBackup} />
+            <Btn
+              color="red"
+              text="Cancel"
+              onPress={() => {
+                setSelectedSafeBackup(null);
+                setShowBackupModal(false);
+              }}
+            />
           </View>
         </View>
-      </Modal>
+      </View>
     );
   }
+  if (showBackupModal && !selectedSafeBackup) return <BackupSelectionScreen />;
+  if (selectedSafeBackup) return <BackupSelectionConfirmScreen />;
+
+  return (
+    <View className="w-full items-center gap-2 mt-4 py-[1rem]">
+      <BudgetSettingsHeader />
+      <View className="w-full gap-2 items-center">
+        {!showEditBudget && payDate ? (
+          <>
+            <BudgetCurrentState />
+            <Spacer h={2} />
+          </>
+        ) : (
+          payDate && (
+            <BudgetSettingsFields
+              budgetMeta={budget}
+              setBudgetMeta={handleSave}
+              mode="edit"
+              intervalValue={newBudgetInterval}
+              onIntervalChange={(i) => setNewBudgetInterval(i)}
+              payDate={newBudgetPayDate?.toDate() ?? payDate.toDate()}
+              onPayDateChange={(d) => setNewBudgetPayDate(Timestamp.fromDate(new Date(d.year, d.month, d.day)))}
+              intervalLabel="Pay period interval"
+              onSave={handleSave}
+            />
+          )
+        )}
+        {isOwner && budget!.memberIds.filter((id) => id !== budget!.ownerId).length > 0 && <BudgetMemberDisplay />}
+      </View>
+
+      <View className="w-full gap-4">
+        {activeBudgetId && !showEditBudget && (
+          <>
+            {showShareBudgetModal && isOwner && <ShareBudgetModal />}
+            {isOwner && (
+              <View className="gap-2">
+                <Btn text="Share budget" h="h-[2.5rem]" color="green" onPress={() => setShowShareBudgetModal(true)} />
+                {safeBackups.length > 0 && !showEditBudget && (
+                  <Btn color="gold" text="Revert To Backup" h="h-[2.5rem]" onPress={() => setShowBackupModal(true)} />
+                )}
+                <Btn text="Delete this budget" h="h-[2.5rem]" color="red" onPress={() => setShowDeleteBudgetConfirm(true)} />
+                {isMember && (
+                  <Btn text="Leave this budget" h="h-[2.5rem]" color="red" onPress={() => setShowLeaveBudgetConfirm(true)} />
+                )}
+              </View>
+            )}
+          </>
+        )}
+      </View>
+      <UndoLastRestoreScreen />
+    </View>
+  );
 }

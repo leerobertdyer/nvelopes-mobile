@@ -1,6 +1,18 @@
 import Svg, { Path, Rect, Line, Polyline } from "react-native-svg";
 
-export type MyIconType = "PAYMENT" | "CASH" | "NVELOPE" | "RESET" | "TAKE" | "DELETE" | "EDIT" | "BACK" | "ADD" | "CHECK";
+export type MyIconType =
+  | "PAYMENT"
+  | "CASH"
+  | "NVELOPE"
+  | "RESET"
+  | "TAKE"
+  | "DELETE"
+  | "EDIT"
+  | "BACK"
+  | "ADD"
+  | "SUB"
+  | "CHECK"
+  | "X";
 
 interface IMyIcon {
   type: MyIconType;
@@ -68,22 +80,51 @@ export default function MyIcon({ type, size = 42, color = "black", strokeWidth =
       <Svg
         width={size}
         height={size}
-        viewBox="0 0 24 24"
+        viewBox="0 0 500 500"
         fill="none"
         stroke={color}
-        strokeWidth={strokeWidth}
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth={28}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       >
-        <Rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-        <Line x1="12" y1="8" x2="12" y2="16" />
-        <Line x1="8" y1="12" x2="16" y2="12" />
+        {/* "$" S-curve */}
+        <Path d="M255 165C255 135 228 120 190 120C152 120 125 138 125 170C125 205 150 218 190 250C230 282 255 295 255 330C255 362 228 380 190 380C152 380 125 365 125 335" />
+        {/* "$" vertical bar */}
+        <Path d="M190 85V415" />
+        {/* smaller "+" */}
+        <Path d="M288 250H376M332 206V294" />
       </Svg>
     );
-  else if ((type === "CHECK"))
+  else if (type === "SUB")
+    return (
+      <Svg
+        width={size}
+        height={size}
+        viewBox="0 0 500 500"
+        fill="none"
+        stroke={color}
+        strokeWidth={28}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {/* "$" S-curve */}
+        <Path d="M255 165C255 135 228 120 190 120C152 120 125 138 125 170C125 205 150 218 190 250C230 282 255 295 255 330C255 362 228 380 190 380C152 380 125 365 125 335" />
+        {/* "$" vertical bar */}
+        <Path d="M190 85V415" />
+        {/* "-" */}
+        <Path d="M288 250H376" />
+      </Svg>
+    );
+  else if (type === "CHECK")
     return (
       <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth}>
         <Polyline points="20 6 9 17 4 12" />
+      </Svg>
+    );
+  else if (type === "X")
+    return (
+      <Svg width={size} height={size} viewBox="0 0 256 256" stroke={color} strokeWidth={strokeWidth}>
+        <Path d="M202.82861,197.17188a3.99991,3.99991,0,1,1-5.65722,5.65624L128,133.65723,58.82861,202.82812a3.99991,3.99991,0,0,1-5.65722-5.65624L122.343,128,53.17139,58.82812a3.99991,3.99991,0,0,1,5.65722-5.65624L128,122.34277l69.17139-69.17089a3.99991,3.99991,0,0,1,5.65722,5.65624L133.657,128Z" />
       </Svg>
     );
 
