@@ -592,10 +592,6 @@ export default function MainView() {
     setIsDeleting(true);
   }
 
-  function handleAddCash() {
-    setIsAddingCash(true);
-  }
-
   async function handleResetEnvelopesAndPaid() {
     if (!activeBudgetId || !user) return;
     const paymentsMarkedPaid = payments.map((p) => {
@@ -619,11 +615,10 @@ export default function MainView() {
   }
 
   async function editCash(spending: boolean) {
-    if (cashAmount <= 0 || !cashName || !user) return;
+    if (cashAmount <= 0 || !user) return;
     setLoadingText(spending ? "Spending Cash..." : "Adding Cash...");
     setShowLoading(true);
-    const randomId = randomUUID();
-    const date = firestore.Timestamp.fromDate(new Date());
+    const amountSpentOrAdded = spending ? (cashAmount * -1) : cashAmount;
     await editDatabaseWithTransaction({
       t: {
         id: createTransactionId(user),
@@ -634,10 +629,10 @@ export default function MainView() {
         createdBy: user.email ?? user.uid,
       },
       budgetId: activeBudgetId!,
-      func: () => updateBudgetStateAndDBB(cashAmount, activeBudgetId!, totalSpendingBudget, setTotalSpendingBudget),
+      func: () => updateBudgetStateAndDBB(amountSpentOrAdded, activeBudgetId!, totalSpendingBudget, setTotalSpendingBudget),
     });
     resetState();
-    Toast.show({ type: "success", text1: "Cash added to budget" });
+    Toast.show({ type: "success", text1: spending ? "Cash removed from budget" : "Cash added to budget" });
   }
 
   function handleAddCashToEnvelope(envelope: Nvelope) {
@@ -894,6 +889,7 @@ export default function MainView() {
             {content === "NVELOPES" ? (
               <NvelopesContainer
                 resetState={resetState}
+                handleSetupNewEnvelope={handleSetupNewEnvelope}
                 handleSetupEdit={handleSetupEdit}
                 editEnvelope={editEnvelopeAndBudget}
                 handleSetShowSpendingPage={handleSetShowSpendingPage}

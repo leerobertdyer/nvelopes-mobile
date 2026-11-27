@@ -6,17 +6,12 @@
  * drag-and-drop reorder and selection state.
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Nvelope } from "../../types";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
 import { useBudget } from "../../context/BudgetContext/useBudget";
-import {
-  addTransaction,
-  editDatabaseWithTransaction,
-  editEnvelopes,
-  editTotalSpendingBudget,
-} from "../../firebase/editData";
-import { View } from "react-native";
+import { addTransaction, editDatabaseWithTransaction, editEnvelopes, editTotalSpendingBudget } from "../../firebase/editData";
+import { Pressable, View } from "react-native";
 import GiveAndTake from "../Payments/GiveAndTake";
 import BigEnvelope from "./BigEnvelope";
 import firestore from "@react-native-firebase/firestore";
@@ -24,6 +19,8 @@ import { useAuth } from "../../context/AuthContext/useAuth";
 import { createTransactionId } from "../../util/util";
 import DraggableNvelope from "./DraggableNvelope";
 import Loading from "../Loading";
+import { MyText } from "../MyText";
+import MyIcon from "../MyIcon";
 
 interface NvelopeProps {
   resetState: () => void;
@@ -32,6 +29,7 @@ interface NvelopeProps {
   handleSetShowSpendingPage: (envelope: Nvelope) => void;
   handleDeleteEnvelope: (id?: string) => void;
   handleAddCashToEnvelope: (envelope: Nvelope) => void;
+  handleSetupNewEnvelope: () => void;
 }
 
 export default function Nvelopes({
@@ -41,20 +39,16 @@ export default function Nvelopes({
   handleSetShowSpendingPage,
   handleDeleteEnvelope,
   handleAddCashToEnvelope,
+  handleSetupNewEnvelope,
 }: NvelopeProps) {
-  const {
-    totalSpendingBudget,
-    setTotalSpendingBudget,
-    envelopes,
-    setEnvelopes,
-  } = useDatabase();
+  const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes } = useDatabase();
   const { activeBudgetId } = useBudget();
   const { user } = useAuth();
 
   const [showGiveAndTake, setShowGiveAndTake] = useState(false);
   const [envelopeToEdit, setEnvelopeToEdit] = useState<Nvelope | null>(null);
   const [isEnvelopeSelected, setIsEnvelopeSelected] = useState(false);
-  const [loadingText, setLoadingText] = useState("")
+  const [loadingText, setLoadingText] = useState("");
 
   function handleBack() {
     setShowGiveAndTake(false);
@@ -65,14 +59,13 @@ export default function Nvelopes({
 
   async function takeBalanceFromEnvelope(amount?: number) {
     if (!envelopeToEdit || !user) return;
-    setLoadingText("Taking...")
+    setLoadingText("Taking...");
     let remainingBalancePlusTotal;
     if (amount) {
       envelopeToEdit.total -= amount;
       remainingBalancePlusTotal = totalSpendingBudget + amount;
     } else {
-      remainingBalancePlusTotal =
-        totalSpendingBudget + (envelopeToEdit.total - envelopeToEdit.spent);
+      remainingBalancePlusTotal = totalSpendingBudget + (envelopeToEdit.total - envelopeToEdit.spent);
       envelopeToEdit.total = envelopeToEdit.spent;
     }
     await editDatabaseWithTransaction({
@@ -89,7 +82,7 @@ export default function Nvelopes({
     });
     await editTotalSpendingBudget(remainingBalancePlusTotal, activeBudgetId!);
     setTotalSpendingBudget(remainingBalancePlusTotal);
-    setLoadingText("")
+    setLoadingText("");
     handleBack();
   }
 
@@ -101,9 +94,7 @@ export default function Nvelopes({
     const newEnvelopes = [...envelopes];
     const envelopeIndex = newEnvelopes.findIndex((e) => e.id === envelope.id);
     newEnvelopes[envelopeIndex] = envelope;
-    const envelopeToEditIndex = newEnvelopes.findIndex(
-      (e) => e.id === envelopeToEdit.id,
-    );
+    const envelopeToEditIndex = newEnvelopes.findIndex((e) => e.id === envelopeToEdit.id);
     newEnvelopes[envelopeToEditIndex] = envelopeToEdit;
 
     await editDatabaseWithTransaction({
@@ -148,7 +139,27 @@ export default function Nvelopes({
     await editEnvelopes(nvelopes, activeBudgetId!);
   }
 
-  if (loadingText) return <Loading text={loadingText} />
+  function NewNvelopeCard() {
+    return (
+      <Pressable
+        onPress={handleSetupNewEnvelope}
+        className={`${envelopes.length === 0 ? "w-full justify-center items-center" : ""}`}
+      >
+        <View className={`bg-white border-2 border-dotted rounded-md w-[7rem] h-[5.25rem]`}>
+          <View className="w-full p-2">
+            <View className="items-center justify-between gap-[2px] w-full">
+              <MyText className={`text-my-black-dark text-sm font-medium border-b-2 border-dotted w-full text-center`}>
+                New Nvelope
+              </MyText>
+                <MyIcon type="NVELOPE" size={35} strokeWidth={24} />
+            </View>
+          </View>
+        </View>
+      </Pressable>
+    );
+  }
+
+  if (loadingText) return <Loading text={loadingText} />;
 
   if (showGiveAndTake && envelopeToEdit) {
     return (
@@ -178,15 +189,15 @@ export default function Nvelopes({
 
   return (
     <View className="justify-center items-center w-full h-fit">
-      <View className="w-full">
-        { envelopes.length > 0 && (
-          <DraggableNvelope
-            onReorder={handleReorderNvelopes}
-            envelopes={envelopes}
-            onPress={handleSelectListEnvelope}
-          />
-        )}
-      </View>
+      {envelopes.length === 0 && <NewNvelopeCard />}
+      {envelopes.length > 0 && (
+        <DraggableNvelope
+          onReorder={handleReorderNvelopes}
+          envelopes={envelopes}
+          onPress={handleSelectListEnvelope}
+          leading={<NewNvelopeCard />}
+        />
+      )}
     </View>
   );
 }

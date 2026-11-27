@@ -3,12 +3,7 @@ import BudgetProvider from "./src/context/BudgetContext/BudgetProvider";
 import DatabaseProvider from "./src/context/DatabaseContext/DatabaseProvider";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Home from "./src/screens/Home";
-import {
-  SafeAreaProvider,
-  SafeAreaView,
-  initialWindowMetrics,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaProvider, SafeAreaView, initialWindowMetrics, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
@@ -17,14 +12,18 @@ import Settings from "./src/screens/Settings";
 import "./global.css";
 import Toast, { BaseToast, BaseToastProps } from "react-native-toast-message";
 import Debt from "./src/screens/Debt";
-import {
-  NavigationContainer,
-  createNavigationContainerRef,
-} from "@react-navigation/native";
+import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
 import TransactionProvider from "./src/context/TransactionContext/TransactionProvider";
 import * as Linking from "expo-linking";
 import AcceptInvite from "./src/screens/budgets/AcceptInvites";
 import { ErrorBoundary } from "./src/components/ErrorBoundary";
+import { configureReanimatedLogger, ReanimatedLogLevel } from "react-native-reanimated";
+
+// This is the default configuration
+configureReanimatedLogger({
+  level: ReanimatedLogLevel.warn,
+  strict: false, // Reanimated runs in strict mode by default
+});
 
 const linking = {
   // Prefixes the app will respond to

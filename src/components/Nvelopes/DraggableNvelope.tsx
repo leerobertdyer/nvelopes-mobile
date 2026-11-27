@@ -1,88 +1,73 @@
 import { DraxView } from "react-native-drax";
 import { View } from "react-native";
-import { Nvelope } from "../../types";
-import NvelopeCard from "./NvelopeCard";
-import { useRef, useState } from "react";
-
+import { useEffect, useRef, useState } from "react";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
   withSequence,
   withTiming,
+  cancelAnimation,
 } from "react-native-reanimated";
-
 import * as Haptics from "expo-haptics";
+import { Nvelope } from "../../types";
+import NvelopeCard from "./NvelopeCard";
+
+const MOVE_THRESHOLD = 10; // pixels
+
+function Shake({ active, children }: { active: boolean; children: React.ReactNode }) {
+  const rotation = useSharedValue(0);
+
+  useEffect(() => {
+    if (active) {
+      rotation.value = withRepeat(withSequence(withTiming(-2, { duration: 100 }), withTiming(2, { duration: 100 })), -1, true);
+    } else {
+      cancelAnimation(rotation);
+      rotation.value = withTiming(0, { duration: 100 });
+    }
+  }, [active, rotation]);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotation.value}deg` }],
+  }));
+
+  return <Animated.View style={style}>{children}</Animated.View>;
+}
 
 export default function DraggableNvelope({
   envelopes,
   onReorder,
   onPress,
+  leading,
 }: {
   envelopes: Nvelope[];
   onReorder: (newOrder: Nvelope[]) => void;
   onPress: (n: Nvelope) => void;
+  leading?: React.ReactNode;
 }) {
-  const [envelopeId, setEnvelopeId] = useState("");
+  const [draggingId, setDraggingId] = useState("");
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
 
-  const rotation = useSharedValue(0);
-
-  const draggingId = useSharedValue("");
-
-  const startShake = (id: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    draggingId.value = id;
-    rotation.value = withRepeat(
-      withSequence(
-        withTiming(-2, { duration: 100 }),
-        withTiming(2, { duration: 100 }),
-      ),
-      -1,
-      true,
-    );
-  };
-
-  const stopShake = () => {
-    rotation.value = withTiming(0, { duration: 100 });
-    draggingId.value = "";
-  };
-  
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotation.value}deg` }],
-  }));
-
-  const handleSwap = (draggedId: string, targetId: string) => {
-    console.log("[SWAP CALLED]", { draggedId, targetId });
-
+  const handleDrop = (draggedId: string, targetId: string) => {
     if (draggedId === targetId) return;
 
-    const newList = [...envelopes];
-    console.log(
-      "[CURRENT LIST]",
-      newList.map((e) => e.id),
-    );
+    const dragged = envelopes.find((e) => e.id === draggedId);
+    if (!dragged) return;
 
-    const draggedIndex = newList.findIndex((e) => e.id === draggedId);
-    const targetIndex = newList.findIndex((e) => e.id === targetId);
+    const without = envelopes.filter((e) => e.id !== draggedId);
+    const targetIndex = without.findIndex((e) => e.id === targetId);
+    if (targetIndex === -1) return;
 
-    if (draggedIndex === -1 || targetIndex === -1) return;
-
-    [newList[draggedIndex], newList[targetIndex]] = [
-      newList[targetIndex],
-      newList[draggedIndex],
-    ];
-    onReorder(newList);
+    onReorder([...without.slice(0, targetIndex), dragged, ...without.slice(targetIndex)]);
   };
 
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
-  const MOVE_THRESHOLD = 10; // pixels
-
   return (
-    <View className="flex-row flex-wrap bg-my-white-light justify-center">
+    <View className="w-full flex-row flex-wrap justify-center items-center">
       {envelopes.map((envelope) => (
         <DraxView
           key={envelope.id}
-          style={[{ padding: 10 }]}
+          style={{ padding: 10 }}
+          receivingStyle={{ opacity: 0.3, paddingLeft: 29 }}
           draggable
           longPressDelay={200}
           payload={envelope.id}
@@ -96,7 +81,6 @@ export default function DraggableNvelope({
             const { pageX, pageY } = e.nativeEvent;
             const dx = Math.abs(pageX - touchStart.current.x);
             const dy = Math.abs(pageY - touchStart.current.y);
-
             touchStart.current = null;
 
             if (dx < MOVE_THRESHOLD && dy < MOVE_THRESHOLD) {
@@ -104,27 +88,21 @@ export default function DraggableNvelope({
             }
           }}
           onDragStart={() => {
-            setEnvelopeId(envelope.id);
-            startShake(envelope.id);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            setDraggingId(envelope.id);
           }}
-          onDragEnd={() => {
-            setEnvelopeId("");
-            stopShake();
-          }}
-          onDragDrop={() => {
-            setEnvelopeId("");
-            stopShake();
-          }} // in case a drop cancels rather than completing normally
+          onDragEnd={() => setDraggingId("")}
+          onDragDrop={() => setDraggingId("")} // in case a drop cancels rather than completing normally
           onReceiveDragDrop={({ dragged }) => {
-            handleSwap(dragged.payload as string, envelope.id);
+            handleDrop(dragged.payload as string, envelope.id);
           }}
-          receivingStyle={{ opacity: 0.3 }}
         >
-          <Animated.View style={envelope.id === envelopeId && animatedStyle}>
+          <Shake active={envelope.id === draggingId}>
             <NvelopeCard envelope={envelope} />
-          </Animated.View>
+          </Shake>
         </DraxView>
       ))}
+      {leading ? <View className="p-3">{leading}</View> : null}
     </View>
   );
 }

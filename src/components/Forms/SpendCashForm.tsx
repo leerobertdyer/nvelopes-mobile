@@ -52,7 +52,7 @@ export default function SpendCashForm({
               label=""
               value={cashName}
               onChange={(e) => setCashName(e)}
-              placeholder="Reason"
+              placeholder="Reason (optional)"
             />
             <MoneyInput
               label=""
@@ -62,7 +62,7 @@ export default function SpendCashForm({
               onChange={setCashAmount}
             />
           </View>
-          {cashAmount > 0 && cashName.length > 0 && (
+          {cashAmount > 0 && (
             <Btn text="Save" onPress={handleSave} color="gold" />
           )}
           <Btn text="Go Back" onPress={handleBack} color="red" />

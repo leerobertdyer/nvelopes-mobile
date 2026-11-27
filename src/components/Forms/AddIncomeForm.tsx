@@ -45,10 +45,10 @@ export default function AddIncomeForm({
         <View className="bg-my-green-dark rounded-md text-my-white-light w-[90vw] mx-auto p-4 pb-6 gap-4 ">
           <View className="w-full m-auto h-fit gap-4 items-center justify-center">
             <MyText className="text-my-white-dark text-lg py-2">Add Cash</MyText>
-            <TextInput id="newCashName" label="" value={cashName} onChange={(e) => setCashName(e)} placeholder="Income Source" />
+            <TextInput id="newCashName" label="" value={cashName} onChange={(e) => setCashName(e)} placeholder="Income Source (optional)" />
             <MoneyInput label="" id="newCashAmount" placeholder="Amount to add" value={cashAmount} onChange={setCashAmount} />
           </View>
-          {cashAmount > 0 && cashName.length > 0 && <Btn text="Save" onPress={handleSave} color="gold" />}
+          {cashAmount > 0 &&  <Btn text="Save" onPress={handleSave} color="gold" />}
           <Btn text="Go Back" onPress={handleBack} color="red" />
         </View>
       </View>

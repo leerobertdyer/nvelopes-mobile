@@ -75,7 +75,7 @@ export default function EnvelopeForm(props: IProps) {
               )}
             </>
           )}
-          {newEnvelopeName && newEnvelopeTotal > 0 && (
+          {newEnvelopeName && (
             <Btn
               onPress={
                 isEditing && envelope
