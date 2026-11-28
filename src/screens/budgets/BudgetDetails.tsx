@@ -382,7 +382,7 @@ export default function BudgetDetails({ setShowDeleteBudgetConfirm }: IBudgetDet
                 setNewBudgetInterval(i);
               }}
               payDate={newBudgetPayDate?.toDate() ?? payDate.toDate()}
-              onPayDateChange={(d) => setNewBudgetPayDate(Timestamp.fromDate(new Date(d.year, d.month, d.day)))}
+              onPayDateChange={(d) => setNewBudgetPayDate(Timestamp.fromDate(new Date(d.year, d.month-1, d.day)))}
               intervalLabel="Pay period interval"
               onSave={handleSave}
             />
