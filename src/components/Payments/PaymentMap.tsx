@@ -39,7 +39,7 @@ export default function PaymentMap({ handleEditBill, handleUpdatePaid, paymentsT
   }, [payments]);
 
   function RenderPayment({ p, hidePayments }: { p: Payment; hidePayments?: boolean }) {
-    const isSplitPayment = p.id.includes("-SPLIT-");
+    const isSplitPayment = p.id.includes("-SPLIT-") || p.type === "BILL" && p.recurring === true;
     const typeColor =
       p.type === "BILL"
         ? "bg-my-red-dark text-my-white-light"

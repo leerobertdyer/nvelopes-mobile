@@ -200,7 +200,7 @@ export function getDaysToNextPayDate(payPeriodInterval: Interval, payDate: Times
 
   // Use differenceInCalendarDays for accurate day counting (adds 1 to include today)
   const diffDays = differenceInCalendarDays(end, today);
-  return diffDays;
+  return diffDays >= 0 ? diffDays + 1 : 0;
 }
 
 export function getNextPayDate(payPeriodInterval: Interval, payDate: Timestamp) {
