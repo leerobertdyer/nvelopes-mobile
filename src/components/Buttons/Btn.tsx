@@ -10,7 +10,8 @@ export default function Btn({
   shadow = false,
   w = "w-[80%]",
   h = "h-[4.5rem]",
-  border = ""
+  border = "",
+  subtle = false
 }: {
   children?: React.ReactNode;
   text?: string;
@@ -21,6 +22,7 @@ export default function Btn({
   w?: string;
   h?: string;
   border?: string
+  subtle?: boolean
 }) {
   const bgColor = () => {
     switch (color.toUpperCase()) {
@@ -43,6 +45,7 @@ export default function Btn({
       className={`rounded-lg ${h} ${w} max-w-[20rem] p-2 items-center justify-center mx-auto
           disabled:opacity-40
               ${bgColor()}
+              ${subtle && "opacity-80"}
               ${border}`
             }
       onPress={onPress}

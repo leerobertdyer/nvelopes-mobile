@@ -3,37 +3,23 @@ import { Payment } from "../types";
 import firestore from "@react-native-firebase/firestore";
 import { SNOWBALL_PAYMENT_ID, SNOWBALL_PAYMENT_NAME } from "../constants";
 
-export function togglePaidDates(
-  payment: Payment,
-  occurrenceDate: Date,
-): Payment {
+export function togglePaidDates(payment: Payment, occurrenceDate: Date): Payment {
   const paidDates = payment.paidDates || [];
   const occurrenceTime = startOfDay(occurrenceDate).getTime();
-  const alreadyPaid = paidDates.some(
-    (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime,
-  );
+  const alreadyPaid = paidDates.some((pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime);
   if (alreadyPaid) {
     return {
       ...payment,
-      paidDates: paidDates.filter(
-        (pd) => startOfDay(pd.toDate()).getTime() !== occurrenceTime,
-      ),
+      paidDates: paidDates.filter((pd) => startOfDay(pd.toDate()).getTime() !== occurrenceTime),
     };
   }
   return {
     ...payment,
-    paidDates: [
-      ...paidDates,
-      firestore.Timestamp.fromDate(startOfDay(occurrenceDate)),
-    ],
+    paidDates: [...paidDates, firestore.Timestamp.fromDate(startOfDay(occurrenceDate))],
   };
 }
 
-export function applyAmountToTotal(
-  payment: Payment,
-  amount: number,
-  occurrenceKey: string,
-): Payment {
+export function applyAmountToTotal(payment: Payment, amount: number, occurrenceKey: string): Payment {
   const paidAmounts = { ...(payment.paidAmounts || {}) };
   const alreadyPaid = occurrenceKey in paidAmounts;
   if (alreadyPaid) {
@@ -55,10 +41,7 @@ export function applyAmountToTotal(
 }
 
 export function isSnowballPayment(p: Payment): boolean {
-  return (
-    p.id === SNOWBALL_PAYMENT_ID ||
-    p.name.toUpperCase() === SNOWBALL_PAYMENT_NAME.toUpperCase()
-  );
+  return p.id === SNOWBALL_PAYMENT_ID || p.name.toUpperCase() === SNOWBALL_PAYMENT_NAME.toUpperCase();
 }
 
 export function getSnowballAmount(payments: Payment[]): number {
@@ -66,17 +49,14 @@ export function getSnowballAmount(payments: Payment[]): number {
 }
 
 export function getSnowballName(payments: Payment[], snowballTargetPaymentId: string): string {
-    return payments.find((p) => p.id === snowballTargetPaymentId)?.name ?? "Set Snowball";
+  return payments.find((p) => p.id === snowballTargetPaymentId)?.name ?? "Set Snowball";
 }
 
 export function getSnowballPayment(payments: Payment[], snowballTargetPaymentId: string): Payment | undefined {
-    return payments.find((p) => p.id === snowballTargetPaymentId);
+  return payments.find((p) => p.id === snowballTargetPaymentId);
 }
 
-export function computeUpdatedPayment(
-  original: Payment,
-  virtual: Payment,
-): Payment {
+export function computeUpdatedPayment(original: Payment, virtual: Payment): Payment {
   const occurrenceDate =
     original.interval === "YEARLY"
       ? new Date(
@@ -87,12 +67,8 @@ export function computeUpdatedPayment(
       : virtual.dueDate.toDate();
   const occurrenceKey = startOfDay(occurrenceDate).getTime().toString();
 
-  if (original.type === "DEBT" || original.type === "FUND") {
-    const withTotal = applyAmountToTotal(
-      original,
-      virtual.amount,
-      occurrenceKey,
-    );
+  if (original.type === "DEBT") {
+    const withTotal = applyAmountToTotal(original, virtual.amount, occurrenceKey);
     return togglePaidDates(withTotal, occurrenceDate);
   }
 

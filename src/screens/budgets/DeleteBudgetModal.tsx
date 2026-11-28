@@ -8,16 +8,9 @@ import { deleteBudgetAsOwner } from "../../firebase/budgets";
 import Toast from "react-native-toast-message";
 import Btn from "../../components/Buttons/Btn";
 
-export default function DeleteBudgetModal({
-  b,
-  setShowDeleteBudgetConfirm,
-}: {
-  b: BudgetMeta;
-  setShowDeleteBudgetConfirm: (b: boolean) => void;
-}) {
+export default function DeleteBudgetModal({ setShowDeleteBudgetConfirm }: { setShowDeleteBudgetConfirm: (b: boolean) => void }) {
   const { user } = useAuth();
-  const { activeBudgetId, setActiveBudgetId, refetchBudgets, budgets } =
-    useBudget();
+  const { activeBudgetId, setActiveBudgetId, refetchBudgets, budgets } = useBudget();
 
   const [isDeletingBudget, setIsDeletingBudget] = useState(false);
 
@@ -44,35 +37,16 @@ export default function DeleteBudgetModal({
       <View className="bg-my-black-dark w-full h-screen">
         <View className="items-center gap-4 w-full h-fit m-auto">
           <View className="items-center w-full">
-            <MyText className="text-xl text-my-red-light mb-2">
-              Delete this budget?
-            </MyText>
+            <MyText className="text-xl text-my-red-light mb-2">Delete this budget?</MyText>
             <MyText className="text-my-white-light w-[80%] text-center">
-              All data (nvelopes, payments) will be permanently deleted. All
-              members will lose access.
-              <MyText className="text-my-red-light underline">
-                {" "}
-                This cannot be undone.
-              </MyText>
+              All data (nvelopes, payments) will be permanently deleted. All members will lose access.
+              <MyText className="text-my-red-light underline"> This cannot be undone.</MyText>
             </MyText>
-            {isDeletingBudget && (
-              <MyText className="text-my-white-dark text-sm mt-4">
-                Deleting…
-              </MyText>
-            )}
+            {isDeletingBudget && <MyText className="text-my-white-dark text-sm mt-4">Deleting…</MyText>}
           </View>
           <View className="gap-2 items-center justify-center w-full">
-            <Btn
-              color="gold"
-              text="Delete Budget"
-              disabled={isDeletingBudget}
-              onPress={handleDeleteBudgetConfirm}
-            />
-            <Btn
-              color="red"
-              text="Go Back"
-              onPress={() => setShowDeleteBudgetConfirm(false)}
-            />
+            <Btn color="gold" text="Delete Budget" disabled={isDeletingBudget} onPress={handleDeleteBudgetConfirm} />
+            <Btn color="red" text="Go Back" onPress={() => setShowDeleteBudgetConfirm(false)} />
           </View>
         </View>
       </View>

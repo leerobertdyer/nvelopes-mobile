@@ -1,12 +1,9 @@
 import { createContext } from "react";
+import { BudgetMeta } from "../../types";
 
-export interface BudgetListItem {
-  id: string;
-  name: string;
-}
 
 export interface BudgetContextValue {
-  budgets: BudgetListItem[];
+  budgets: BudgetMeta[];
   activeBudgetId: string | null;
   setActiveBudgetId: (id: string | null) => void;
   isLoadingBudgets: boolean;

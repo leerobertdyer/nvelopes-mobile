@@ -1,27 +1,21 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../AuthContext/useAuth";
 import { BudgetContext } from "./BudgetContext";
-import type { BudgetListItem } from "./BudgetContext";
 import { createFirstBudget } from "../../firebase/budgets";
 import { editIsNewUser } from "../../firebase/editData";
 import firestore from "@react-native-firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { BudgetMeta } from "../../types";
 
 const ACTIVE_BUDGET_KEY = "nvelope_activeBudgetId";
 
-export default function BudgetProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function BudgetProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [budgets, setBudgets] = useState<BudgetListItem[]>([]);
-  const [activeBudgetId, setActiveBudgetIdState] = useState<string | null>(
-    null,
-  );
+  const [budgets, setBudgets] = useState<BudgetMeta[]>([]);
+  const [activeBudgetId, setActiveBudgetIdState] = useState<string | null>(null);
   const [isLoadingBudgets, setIsLoadingBudgets] = useState(true);
 
-  const loadBudgets = useCallback(async (): Promise<BudgetListItem[]> => {
+  const loadBudgets = useCallback(async (): Promise<BudgetMeta[]> => {
     if (!user) {
       setBudgets([]);
       setActiveBudgetIdState(null);
@@ -30,22 +24,27 @@ export default function BudgetProvider({
     }
     setIsLoadingBudgets(true);
     try {
+      const budgetSnap = await firestore().collection("budgets").where("memberIds", "array-contains", user.uid).get();
 
-      const budgetSnap = await firestore()
-        .collection("budgets")
-        .where("memberIds", "array-contains", user.uid)
-        .get();
-
-      const list: BudgetListItem[] = budgetSnap.docs.map((d) => ({
+      const budgets: BudgetMeta[] = budgetSnap.docs.map((d) => ({
         id: d.id,
-        name: (d.data() as { name?: string }).name ?? "Budget",
+        name: d.data().name ?? "Budget",
+        payDate: d.data().payDate,
+        payPeriodInterval: d.data().payPeriodInterval,
+        createdAt: d.data().createdAt,
+        ownerId: d.data().ownerId,
+        memberIds: d.data().memberIds,
+        memberEmails: d.data().memberEmails,
+        envelopeCount: d.data().envelopes?.length,
+        billCount: d.data().payments?.length,
+        availableBudget: d.data().availableBudget,
       }));
-      setBudgets(list);
+      setBudgets(budgets);
 
       const stored = await AsyncStorage.getItem(ACTIVE_BUDGET_KEY);
-      const validStored = list.some((b) => b.id === stored);
-      if (list.length > 0) {
-        const nextActive = validStored && stored ? stored : list[0].id;
+      const validStored = budgets.some((b) => b.id === stored);
+      if (budgets.length > 0) {
+        const nextActive = validStored && stored ? stored : budgets[0].id;
         setActiveBudgetIdState(nextActive);
         if (nextActive !== stored) {
           await AsyncStorage.setItem(ACTIVE_BUDGET_KEY, nextActive);
@@ -54,7 +53,7 @@ export default function BudgetProvider({
         setActiveBudgetIdState(null);
         await AsyncStorage.removeItem(ACTIVE_BUDGET_KEY);
       }
-      return list;
+      return budgets;
     } catch (e) {
       console.error("BudgetProvider: failed to load budgets", e);
       setBudgets([]);
@@ -100,7 +99,5 @@ export default function BudgetProvider({
     handleRemovedFromBudget,
   };
 
-  return (
-    <BudgetContext.Provider value={value}>{children}</BudgetContext.Provider>
-  );
+  return <BudgetContext.Provider value={value}>{children}</BudgetContext.Provider>;
 }

@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { calculateCurrentIntervalStart, getIntervalDateRange, getNumberOfDaysFromInterval } from "../../util/util";
+import {
+  calculateCurrentIntervalStart,
+  getDaysToNextPayDate,
+  getIntervalDateRange,
+  getNumberOfDaysFromInterval,
+} from "../../util/util";
 import { differenceInCalendarDays, startOfDay } from "date-fns";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
 import { Pressable, View } from "react-native";
@@ -23,42 +28,14 @@ export default function Header({
   const { activeBudgetId, budgets } = useBudget();
   const activeBudgetName = budgets.find((b) => b.id === activeBudgetId)?.name ?? "Budget";
 
-  // TODO: handle spend cash
-
+  // Handle Display for payPeriod and remaining Budget
   useEffect(() => {
-    // Handle Display for payPeriod and remaining Budget
-
     if (!payDate || !payPeriodInterval) {
       setDaysTillReset(0);
       return;
     }
-    const today = startOfDay(new Date());
-
-    const currentPayPeriodStart = calculateCurrentIntervalStart(payDate.toDate(), payPeriodInterval);
-    // If today IS the period start, show the full period length
-    if (startOfDay(currentPayPeriodStart).getTime() === today.getTime()) {
-      const periodLength = getNumberOfDaysFromInterval(payPeriodInterval);
-      setDaysTillReset(periodLength);
-      return;
-    }
-
-    let { end } = getIntervalDateRange(payPeriodInterval, currentPayPeriodStart);
-
-    const beginningOfPayday = startOfDay(payDate.toDate());
-    if (beginningOfPayday > today) {
-      // If setting payday to future, set end to the day BEFORE payday (last day of current period)
-      // This matches getIntervalDateRange which also subtracts 1 day to get the last day
-      end = startOfDay(payDate.toDate());
-      const diffDays = differenceInCalendarDays(end, today);
-      // Don't add 1 here since end is the reset day, not the last day of period
-      setDaysTillReset(diffDays > 0 ? diffDays : 1);
-      return;
-    }
-
-    // Use differenceInCalendarDays for accurate day counting (adds 1 to include today)
-    const diffDays = differenceInCalendarDays(end, today);
-
-    setDaysTillReset(diffDays >= 0 ? diffDays + 1 : 0);
+    const daysToNextPayDate = getDaysToNextPayDate(payPeriodInterval, payDate);
+    setDaysTillReset(daysToNextPayDate);
   }, [payPeriodInterval, payDate, totalSpendingBudget]);
 
   if (showEditSpendingBudget) return <EditSpendingBudget handleBack={() => setShowEditSpendingBudget(false)} />;
@@ -87,7 +64,6 @@ export default function Header({
     );
   }
 
-
   function BudgetDisplay() {
     return (
       <View
@@ -105,32 +81,38 @@ export default function Header({
     );
   }
 
-  function AddOrRemoveCash() {
+  function AddCash() {
     return (
-      <View className="flex-row gap-2">
-        <Pressable
-          onPress={handleSpendCash}
-          className="bg-my-red-light border-2 border-my-black-dark rounded-lg p-[1px] h-[3rem] w-[3rem] justify-center items-center"
-        >
-          <MyIcon type={"CASH"} size={30} strokeWidth={6} />
-        </Pressable>
-        <Pressable
-          onPress={handleAddCash}
-          className="bg-my-green-light border-2 border-my-black-dark rounded-lg p-[1px] h-[3rem] w-[3rem] justify-center items-center"
-        >
-          <MyIcon type={"CASH"} size={30} strokeWidth={6}/>
-        </Pressable>
-      </View>
+      <Pressable
+        onPress={handleAddCash}
+        className="bg-my-green-light border-2 border-my-black-dark rounded-lg p-[1px] h-[3.25rem] w-[3.25rem] justify-center items-center"
+      >
+        <MyIcon type={"CASH"} size={30} strokeWidth={6} />
+      </Pressable>
+    );
+  }
+
+  function RemoveCash() {
+    return (
+      <Pressable
+        onPress={handleSpendCash}
+        className="bg-my-red-light border-2 border-my-black-dark rounded-lg p-[1px] h-[3.25rem] w-[3.25rem] justify-center items-center"
+      >
+        <MyIcon type={"CASH"} size={30} strokeWidth={6} />
+      </Pressable>
     );
   }
 
   return (
     <View className="w-full">
       <BackButton />
-      <View className="flex-row justify-center items-center gap-2 w-screen px-6">
+      <View className="flex-row justify-between items-center gap-2 w-screen px-6">
         <DayCounter />
-        <BudgetDisplay />
-        <AddOrRemoveCash />
+        <View className="flex-row justify-start items-center gap-[2px]">
+          <RemoveCash />
+          <BudgetDisplay />
+          <AddCash />
+        </View>
       </View>
     </View>
   );

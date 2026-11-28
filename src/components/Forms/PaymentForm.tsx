@@ -1,11 +1,11 @@
 import { Calendar, DateData } from "react-native-calendars";
 import { BIWEEKLY, MONTHLY, SPLIT, WEEKLY, YEARLY } from "../../constants";
-import type { Interval, Payment } from "../../types";
+import type { Interval, Payment, PaymentTypeOption } from "../../types";
 import { useState } from "react";
 import { editPayments } from "../../firebase/editData";
 import { generateFreshPayment, removeVirtualIdPortion } from "../../util/util";
-import { format, addDays } from "date-fns";
-import PaymentTypeSelector, { type PaymentTypeOption } from "./PaymentTypeSelector";
+import { format } from "date-fns";
+import PaymentTypeSelector from "./PaymentTypeSelector";
 import { Pressable, ScrollView, View } from "react-native";
 import Input from "../Input";
 import { useBudget } from "../../context/BudgetContext/useBudget";
@@ -31,7 +31,7 @@ interface IPaymentForm {
 
 export default function PaymentForm({ paymentToEdit, user, handleBack }: IPaymentForm) {
   const { activeBudgetId } = useBudget();
-  const { payDate, payPeriodInterval, payments, setPayments } = useDatabase();
+  const { payPeriodInterval, payments, setPayments } = useDatabase();
 
   const [newPaymentDate, setNewPaymentDate] = useState<string>(
     paymentToEdit?.dueDate.toDate() ? format(paymentToEdit.dueDate.toDate(), "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"), // Default to today's date string if it's a brand new payment
@@ -50,7 +50,6 @@ export default function PaymentForm({ paymentToEdit, user, handleBack }: IPaymen
 
   // Helper to determine PaymentTypeOption from existing Payment
   function getPaymentTypeFromPayment(p: Payment): PaymentTypeOption {
-    if (p.type === "FUND") return "FUND";
     if (p.type === "DEBT") return "DEBT";
     // For BILL with SPLIT interval, it's still a Bill (just split across pay periods)
     return "BILL";
@@ -77,16 +76,6 @@ export default function PaymentForm({ paymentToEdit, user, handleBack }: IPaymen
           type: "DEBT",
           interval: undefined, // Let user choose
           recurring: undefined,
-        });
-        break;
-      case "FUND":
-        // Fund is a planned expense to save toward - uses SPLIT interval
-        setNewPayment({
-          ...newPayment,
-          type: "FUND",
-          interval: SPLIT,
-          recurring: false,
-          total: newPayment.amount,
         });
         break;
     }
@@ -148,7 +137,7 @@ export default function PaymentForm({ paymentToEdit, user, handleBack }: IPaymen
   }
 
   async function addPayment() {
-    if (!user || !newPayment) return;
+    if (!user || !newPayment || !activeBudgetId) return;
     if (payments.some((p) => p.id === newPayment.id)) {
       Toast.show({ type: "error", text1: "Payment name already exists" });
       return;
@@ -157,10 +146,11 @@ export default function PaymentForm({ paymentToEdit, user, handleBack }: IPaymen
     if (newPayment.type === "DEBT") {
       updatedPayments = [...payments, { ...newPayment, originalTotal: newPayment.total }];
     } else {
+      console.log("NOT DEBT");
       updatedPayments = [...payments, newPayment];
     }
+    console.log("Updated payments: ", updatedPayments);
     setPayments(updatedPayments);
-    if (!activeBudgetId) return;
     await editPayments(updatedPayments, activeBudgetId);
     Toast.show({ type: "success", text1: "Payment added" });
     handleBack();
@@ -179,8 +169,6 @@ export default function PaymentForm({ paymentToEdit, user, handleBack }: IPaymen
         return splitBillAcrossPayPeriods ? "Bill (Split)" : "Bill";
       case "DEBT":
         return "Debt";
-      case "FUND":
-        return "Fund";
       default:
         return "";
     }
@@ -188,11 +176,6 @@ export default function PaymentForm({ paymentToEdit, user, handleBack }: IPaymen
 
   // Check if form is complete enough to save
   const canSave = selectedPaymentType && newPayment.name && newPayment.amount > 0 && newPayment.interval && newPaymentDate;
-
-  // If type is FUND, minDate is tomorrow. Otherwise, there is no minimum date constraint.
-  const minDateString = selectedPaymentType === "FUND" ? format(addDays(new Date(), 1), "yyyy-MM-dd") : undefined;
-
-  const paymentLabel = selectedPaymentType === "FUND" ? "Funding Goal" : "Payment Amount";
 
   return (
     <ScrollView
@@ -243,22 +226,16 @@ export default function PaymentForm({ paymentToEdit, user, handleBack }: IPaymen
               <View className="items-center w-full mb-4">
                 <MoneyInput
                   id="amount"
-                  label={paymentLabel}
+                  label="Payment Amont"
                   value={newPayment?.amount ?? 0}
                   onChange={(amount) => {
                     setNewPayment({
                       ...newPayment,
                       amount,
-                      ...(selectedPaymentType === "FUND" ? { total: amount } : {}),
                     });
                   }}
-                  placeholder={selectedPaymentType === "FUND" ? "Target amount to save" : "Payment amount"}
+                  placeholder="Payment amount"
                 />
-                {selectedPaymentType === "FUND" && (
-                  <MyText className="text-xs text-my-white-light mt-1">
-                    This amount will be split across your pay periods until the target date
-                  </MyText>
-                )}
                 {splitBillAcrossPayPeriods && (
                   <MyText className="text-xs text-my-white-light mt-1">
                     This monthly amount will be split across your pay periods
@@ -285,9 +262,7 @@ export default function PaymentForm({ paymentToEdit, user, handleBack }: IPaymen
             {/* Due/Target Date */}
             {newPayment.name && newPayment.amount > 0 && (
               <View className="items-center w-full">
-                <MyText className="text-my-white-base">
-                  {selectedPaymentType === "FUND" ? "Target Date (when you need the money)" : "Due Date"}
-                </MyText>
+                <MyText className="text-my-white-base">"Due Date"</MyText>
                 <View className="text-black rounded-md overflow-hidden border-2 border-my-white-dark text-center bg-my-white-light p-2 w-[70%]">
                   <Calendar
                     markedDates={{
@@ -315,7 +290,6 @@ export default function PaymentForm({ paymentToEdit, user, handleBack }: IPaymen
                     }}
                     onDayPress={handleCalendarChange}
                     date={newPaymentDate}
-                    minDate={minDateString}
                   />
                 </View>
               </View>
@@ -395,11 +369,6 @@ export default function PaymentForm({ paymentToEdit, user, handleBack }: IPaymen
               <View className="text-sm mt-1">
                 {splitBillAcrossPayPeriods ? (
                   <MyText>Monthly amount split across your pay periods</MyText>
-                ) : selectedPaymentType === "FUND" ? (
-                  <View className="items-center">
-                    <MyText>Planned expense due </MyText>
-                    <MyText className="text-my-blue-dark">{format(newPayment.dueDate.toDate(), "MMM do, yyyy")}</MyText>
-                  </View>
                 ) : (
                   <MyText>
                     Due {newPayment.interval?.toLowerCase()} on the{" "}

@@ -28,7 +28,6 @@ import MyIcon from "../../components/MyIcon";
 import firestore from "@react-native-firebase/firestore";
 import BudgetSettingsFields from "../../components/Forms/BudgetSettingsFields";
 import Spacer from "../../components/Spacer";
-import { getBudgetMeta } from "../../firebase/budgets";
 
 const { Timestamp } = firestore;
 
@@ -46,7 +45,7 @@ export default function BudgetDetails({ setShowDeleteBudgetConfirm }: IBudgetDet
   const [sharing, setSharing] = useState(false);
   const [shareEmail, setShareEmail] = useState("");
   const [showShareBudgetModal, setShowShareBudgetModal] = useState(false);
-  const [memberToRemove, setMemberToRemove] = useState("");
+  const [memberToRemove, setMemberToRemove] = useState(""); // TODO
   const [showLeaveBudgetConfirm, setShowLeaveBudgetConfirm] = useState(false);
   const [isLeavingBudget, setIsLeavingBudget] = useState(false);
   const [selectedSafeBackup, setSelectedSafeBackup] = useState<(BackupData & { id: string }) | null>(null);
@@ -64,23 +63,10 @@ export default function BudgetDetails({ setShowDeleteBudgetConfirm }: IBudgetDet
   const [showEditBudget, setShowEditBudget] = useState(false);
 
   // Budget State
-  const [newBudgetName, setNewBudgetName] = useState();
   const [newBudgetInterval, setNewBudgetInterval] = useState(payPeriodInterval);
   const [newBudgetPayDate, setNewBudgetPayDate] = useState(payDate);
-  const [budget, setBudget] = useState<BudgetMeta>();
 
-  async function refreshBudget() {
-    if (!activeBudgetId) return;
-    const newBudget = await getBudgetMeta(activeBudgetId);
-    if (newBudget) {
-      setBudget(newBudget);
-      setNewBudgetName(newBudget!.name);
-    }
-  }
-
-  useEffect(() => {
-    refreshBudget();
-  }, [activeBudgetId]);
+  const budget = budgets.find((b) => b.id === activeBudgetId);
 
   // Load safe backups for active budget and check for localStorage backup
   useEffect(() => {
@@ -102,9 +88,7 @@ export default function BudgetDetails({ setShowDeleteBudgetConfirm }: IBudgetDet
   if (!budget) return;
 
   function handleSelectBackup(backupId: string) {
-    console.log("Start:", backupId);
     const backup = safeBackups.find((b) => b.id === backupId);
-    console.log("backeup found? ", backup);
     if (backup) {
       setSelectedSafeBackup(backup);
     } else Toast.show({ type: "error", text1: "No Backup Found" });
@@ -112,13 +96,16 @@ export default function BudgetDetails({ setShowDeleteBudgetConfirm }: IBudgetDet
 
   function handleCloseBackup() {
     setSelectedSafeBackup(null);
+    setShowBackupModal(false);
   }
 
   async function handleRestoreBackup() {
     if (!user || !selectedSafeBackup) return;
     if (!activeBudgetId) return;
     const result = await restoreFromSafeBackup(selectedSafeBackup.id, user, activeBudgetId);
+
     if (result) {
+      console.log("[BEFORE setPayments]", typeof result.payments?.[0]?.dueDate?.toDate);
       setPayments(result.payments ?? []);
       setEnvelopes(result.nvelopes ?? []);
       setTotalSpendingBudget(Number(result.totalSpendingBudget));
@@ -181,20 +168,18 @@ export default function BudgetDetails({ setShowDeleteBudgetConfirm }: IBudgetDet
     }
   }
 
-  function reset() {
-    setPayPeriodInterval(payPeriodInterval);
-    setPayDate(payDate);
-    setNewBudgetName(newBudgetName);
-    setShowEditBudget(false);
-  }
-
   async function handleSave() {
     if (!activeBudgetId || !user) return;
-    if (newBudgetInterval !== payPeriodInterval) await editPayPeriodInterval(newBudgetInterval, activeBudgetId);
-    if (newBudgetPayDate && newBudgetPayDate !== payDate) await editPayDate(newBudgetPayDate?.toDate(), activeBudgetId);
+    if (newBudgetInterval !== payPeriodInterval) {
+      await editPayPeriodInterval(newBudgetInterval, activeBudgetId);
+      setPayPeriodInterval(newBudgetInterval);
+    }
+    if (newBudgetPayDate && newBudgetPayDate !== payDate) {
+      await editPayDate(newBudgetPayDate?.toDate(), activeBudgetId);
+      setPayDate(newBudgetPayDate);
+    }
     await refetchBudgets();
-    await refreshBudget();
-    reset();
+    setShowEditBudget(false);
   }
 
   if (sharing) return <Loading text="Sharing..." />;
@@ -303,7 +288,7 @@ export default function BudgetDetails({ setShowDeleteBudgetConfirm }: IBudgetDet
     if (!asyncStorageBackup) return null;
     return (
       <Pressable
-        className="justify-around w-[80%] max-w-[20rem] h-fit items-center p-2  rounded-md border-2 border-my-white-dark text-my-white-light my-4 gap-2"
+        className="justify-around w-[80%] max-w-[20rem] h-fit items-center p-2 rounded-md my-4 gap-2"
         onPress={() => setShowUndoConfirm(true)}
       >
         <MyText className="text-sm font-bold">Undo Last Restore</MyText>
@@ -347,7 +332,7 @@ export default function BudgetDetails({ setShowDeleteBudgetConfirm }: IBudgetDet
 
   function BackupSelectionConfirmScreen() {
     return (
-      <View className="bg-my-white-light h-full w-full justify-center items-center">
+      <View className="bg-my-white-light h-fit w-full justify-center items-center">
         <View className="w-full h-fit text-center justify-center items-center p-4 bg-my-black-dark">
           <MyText className="text-xl text-my-red-light">Are you sure??</MyText>
           <MyText className="text-my-white-light">You can undo this restore if needed.</MyText>
@@ -361,7 +346,7 @@ export default function BudgetDetails({ setShowDeleteBudgetConfirm }: IBudgetDet
             {(selectedSafeBackup?.nvelopes ?? []).reduce((acc, p) => p.total + acc, 0).toFixed(2)}
           </MyText>
           <View className="gap-2 w-full">
-            <Btn color="gold" text="Save" onPress={handleRestoreBackup} />
+            <Btn color="gold" text="Revert" onPress={handleRestoreBackup} />
             <Btn
               color="red"
               text="Cancel"
@@ -379,7 +364,7 @@ export default function BudgetDetails({ setShowDeleteBudgetConfirm }: IBudgetDet
   if (selectedSafeBackup) return <BackupSelectionConfirmScreen />;
 
   return (
-    <View className="w-full items-center gap-2 mt-4 py-[1rem]">
+    <View className="w-full items-center gap-2 py-[1rem] bg-my-white-dark/20">
       <BudgetSettingsHeader />
       <View className="w-full gap-2 items-center">
         {!showEditBudget && payDate ? (
@@ -391,10 +376,11 @@ export default function BudgetDetails({ setShowDeleteBudgetConfirm }: IBudgetDet
           payDate && (
             <BudgetSettingsFields
               budgetMeta={budget}
-              setBudgetMeta={handleSave}
               mode="edit"
               intervalValue={newBudgetInterval}
-              onIntervalChange={(i) => setNewBudgetInterval(i)}
+              onIntervalChange={(i) => {
+                setNewBudgetInterval(i);
+              }}
               payDate={newBudgetPayDate?.toDate() ?? payDate.toDate()}
               onPayDateChange={(d) => setNewBudgetPayDate(Timestamp.fromDate(new Date(d.year, d.month, d.day)))}
               intervalLabel="Pay period interval"
@@ -411,13 +397,13 @@ export default function BudgetDetails({ setShowDeleteBudgetConfirm }: IBudgetDet
             {showShareBudgetModal && isOwner && <ShareBudgetModal />}
             {isOwner && (
               <View className="gap-2">
-                <Btn text="Share budget" h="h-[2.5rem]" color="green" onPress={() => setShowShareBudgetModal(true)} />
+                <Btn subtle text="Share budget" h="h-[2.5rem]" color="green" onPress={() => setShowShareBudgetModal(true)} />
                 {safeBackups.length > 0 && !showEditBudget && (
-                  <Btn color="gold" text="Revert To Backup" h="h-[2.5rem]" onPress={() => setShowBackupModal(true)} />
+                  <Btn subtle color="gold" text="Revert To Backup" h="h-[2.5rem]" onPress={() => setShowBackupModal(true)} />
                 )}
-                <Btn text="Delete this budget" h="h-[2.5rem]" color="red" onPress={() => setShowDeleteBudgetConfirm(true)} />
+                <Btn subtle text="Delete this budget" h="h-[2.5rem]" color="red" onPress={() => setShowDeleteBudgetConfirm(true)} />
                 {isMember && (
-                  <Btn text="Leave this budget" h="h-[2.5rem]" color="red" onPress={() => setShowLeaveBudgetConfirm(true)} />
+                  <Btn subtle text="Leave this budget" h="h-[2.5rem]" color="red" onPress={() => setShowLeaveBudgetConfirm(true)} />
                 )}
               </View>
             )}

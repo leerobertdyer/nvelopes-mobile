@@ -1,17 +1,11 @@
 import type { Payment, Interval, IntervalDates } from "../types";
+import { BIWEEKLY, MONTHLY, SNOWBALL_PAYMENT_ID, SNOWBALL_PAYMENT_NAME, SPLIT, WEEKLY, YEARLY } from "../constants";
 import {
-  BIWEEKLY,
-  MONTHLY,
-  SNOWBALL_PAYMENT_ID,
-  SNOWBALL_PAYMENT_NAME,
-  SPLIT,
-  WEEKLY,
-  YEARLY,
-} from "../constants";
-import {
+  addDays,
   addMonths,
   addWeeks,
   addYears,
+  differenceInCalendarDays,
   endOfMonth,
   getDaysInMonth,
   isAfter,
@@ -32,36 +26,25 @@ type User = FirebaseAuthTypes.User;
 type Timestamp = FirebaseFirestoreTypes.Timestamp;
 const { Timestamp } = firestore;
 
-export function recalculateBudget(params: {
-  currentAvailableBudget: number;
-  diffAmount: number;
-}): number {
+export function recalculateBudget(params: { currentAvailableBudget: number; diffAmount: number }): number {
   const { currentAvailableBudget, diffAmount } = params;
   return currentAvailableBudget + diffAmount;
 }
 
 /** UUID v4. Uses crypto.randomUUID() when available (e.g. modern browsers), else a fallback for older iOS Safari/WebViews. */
 export function randomUUID(): string {
-  if (
-    typeof crypto !== "undefined" &&
-    typeof crypto.randomUUID === "function"
-  ) {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
   }
   const bytes = new Uint8Array(16);
-  if (
-    typeof crypto !== "undefined" &&
-    typeof crypto.getRandomValues === "function"
-  ) {
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
     crypto.getRandomValues(bytes);
   } else {
     for (let i = 0; i < 16; i++) bytes[i] = (Math.random() * 256) | 0;
   }
   bytes[6] = (bytes[6]! & 0x0f) | 0x40;
   bytes[8] = (bytes[8]! & 0x3f) | 0x80;
-  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join(
-    "",
-  );
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
@@ -72,11 +55,7 @@ export function calculateCurrentIntervalStart(d: Date, i: Interval): Date {
   else return calculateIntervalsFromPastDate(i, start, today);
 }
 
-export function calculateIntervalsFromPastDate(
-  i: Interval,
-  start: Date,
-  today: Date,
-) {
+export function calculateIntervalsFromPastDate(i: Interval, start: Date, today: Date) {
   // Note: I've left both of these functions in place intentionally for readability
   switch (i) {
     case WEEKLY: {
@@ -128,11 +107,7 @@ export function calculateIntervalsFromPastDate(
   }
 }
 
-export function calculateIntervalsFromFutureDate(
-  i: Interval,
-  start: Date,
-  today: Date,
-): Date {
+export function calculateIntervalsFromFutureDate(i: Interval, start: Date, today: Date): Date {
   // Note: I've left both of these functions in place intentionally for readability
   switch (i) {
     case WEEKLY: {
@@ -201,6 +176,39 @@ export function getIntervalDateRange(i: Interval, start: Date): IntervalDates {
   };
 }
 
+export function getDaysToNextPayDate(payPeriodInterval: Interval, payDate: Timestamp) {
+  const today = startOfDay(new Date());
+
+  const currentPayPeriodStart = calculateCurrentIntervalStart(payDate.toDate(), payPeriodInterval);
+  // If today IS the period start, show the full period length
+  if (startOfDay(currentPayPeriodStart).getTime() === today.getTime()) {
+    const periodLength = getNumberOfDaysFromInterval(payPeriodInterval);
+    return periodLength;
+  }
+
+  let { end } = getIntervalDateRange(payPeriodInterval, currentPayPeriodStart);
+
+  const beginningOfPayday = startOfDay(payDate.toDate());
+  if (beginningOfPayday > today) {
+    // If setting payday to future, set end to the day BEFORE payday (last day of current period)
+    // This matches getIntervalDateRange which also subtracts 1 day to get the last day
+    end = startOfDay(payDate.toDate());
+    const diffDays = differenceInCalendarDays(end, today);
+    // Don't add 1 here since end is the reset day, not the last day of period
+    return diffDays > 0 ? diffDays : 1;
+  }
+
+  // Use differenceInCalendarDays for accurate day counting (adds 1 to include today)
+  const diffDays = differenceInCalendarDays(end, today);
+  return diffDays;
+}
+
+export function getNextPayDate(payPeriodInterval: Interval, payDate: Timestamp) {
+  const daysToNextPayDate = getDaysToNextPayDate(payPeriodInterval, payDate);
+  const today = new Date();
+  return addDays(today, daysToNextPayDate);
+}
+
 export function getNumberOfDaysFromInterval(i: Interval) {
   switch (i) {
     case "YEARLY":
@@ -218,39 +226,20 @@ export function getNumberOfDaysFromInterval(i: Interval) {
 
 export function getPaymentCurrentDueDate(p: Payment): Date {
   const originalDate = p.dueDate.toDate();
-  const startOfCurrentPaymentInterval = calculateCurrentIntervalStart(
-    originalDate,
-    p.interval,
-  );
-  const { end } = getIntervalDateRange(
-    p.interval,
-    startOfCurrentPaymentInterval,
-  );
+  const startOfCurrentPaymentInterval = calculateCurrentIntervalStart(originalDate, p.interval);
+  const { end } = getIntervalDateRange(p.interval, startOfCurrentPaymentInterval);
   // console.log(`[getPaymentCurrentDueDate] checking ${p.name} to get current date. OriginalDueDate: ${originalDate}, startOfCurrentPaymentInterval: ${startOfCurrentPaymentInterval}, end: ${end}`)
   return end;
 }
 
-export function isDateInCurrentPayPeriod(
-  payPeriodInterval: Interval,
-  payDate: Date,
-  d: Date,
-): boolean {
-  const startOfCurrentPaymentInterval = calculateCurrentIntervalStart(
-    payDate,
-    payPeriodInterval,
-  );
-  const { start, end } = getIntervalDateRange(
-    payPeriodInterval,
-    startOfCurrentPaymentInterval,
-  );
+export function isDateInCurrentPayPeriod(payPeriodInterval: Interval, payDate: Date, d: Date): boolean {
+  const startOfCurrentPaymentInterval = calculateCurrentIntervalStart(payDate, payPeriodInterval);
+  const { start, end } = getIntervalDateRange(payPeriodInterval, startOfCurrentPaymentInterval);
   // console.log(`[isDateInCurrentPayPeriod] payPeriodInterval: ${payPeriodInterval}, payDate: ${payDate}, dateToCheck: ${d} PayPeriodRange: START=${start} end=${end}`)
   return isWithinInterval(d, { start, end }); // Is the date within the current pay period
 }
 
-export function getCurrentIntervalDateRange(
-  payPeriodInterval: Interval,
-  payDate: Timestamp,
-) {
+export function getCurrentIntervalDateRange(payPeriodInterval: Interval, payDate: Timestamp) {
   const originalDate = payDate.toDate();
   const start = calculateCurrentIntervalStart(originalDate, payPeriodInterval);
   const { end } = getIntervalDateRange(payPeriodInterval, start);
@@ -269,21 +258,9 @@ export function getEffectivePaymentAmount(p: Payment): number {
   return p.amount;
 }
 
-const WEEKDAY_NAMES = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-] as const;
+const WEEKDAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
 
-export function paymentsTotal(
-  payments: Payment[],
-  payPeriodInterval: Interval,
-  payDate: Timestamp | null,
-) {
+export function paymentsTotal(payments: Payment[], payPeriodInterval: Interval, payDate: Timestamp | null) {
   const remainingDebt = payments.reduce((acc, p: Payment) => {
     return p.type === "DEBT" && p.total ? acc + p.total : acc;
   }, 0);
@@ -293,52 +270,23 @@ export function paymentsTotal(
       currentBills: 0,
       totalBills: 0,
       currentDebts: 0,
-      currentFunds: 0,
       monthlyDebts: 0,
-      totalFunds: 0,
       remainingDebt,
       totalMonthlyPayments: 0,
     };
   }
 
   // Get all virtual payments for the month, then filter for current period totals
-  const virtualPayments = getVirtualPaymentsForCurrentPeriod(
-    payments,
-    payPeriodInterval,
-    payDate,
-  );
-  const totalMonthlyPayments = virtualPayments.reduce(
-    (acc, p: Payment) => acc + getEffectivePaymentAmount(p),
-    0,
-  );
+  const virtualPayments = getVirtualPaymentsForCurrentPeriod(payments, payPeriodInterval, payDate);
+  const totalMonthlyPayments = virtualPayments.reduce((acc, p: Payment) => acc + getEffectivePaymentAmount(p), 0);
   const currentBills = virtualPayments.reduce((acc, p: Payment) => {
-    return p.type === "BILL" &&
-      isDateInCurrentPayPeriod(
-        payPeriodInterval,
-        payDate.toDate(),
-        getPaymentCurrentDueDate(p),
-      )
+    return p.type === "BILL" && isDateInCurrentPayPeriod(payPeriodInterval, payDate.toDate(), getPaymentCurrentDueDate(p))
       ? acc + p.amount
       : acc;
   }, 0);
   const currentDebts = virtualPayments.reduce((acc, p: Payment) => {
-    return p.type === "DEBT" &&
-      isDateInCurrentPayPeriod(
-        payPeriodInterval,
-        payDate.toDate(),
-        getPaymentCurrentDueDate(p),
-      )
+    return p.type === "DEBT" && isDateInCurrentPayPeriod(payPeriodInterval, payDate.toDate(), getPaymentCurrentDueDate(p))
       ? acc + getEffectivePaymentAmount(p)
-      : acc;
-  }, 0);
-  const currentFunds = virtualPayments.reduce((acc, p: Payment) => {
-    return p.type === "FUND" &&
-      isDateInCurrentPayPeriod(
-        payPeriodInterval,
-        payDate.toDate(),
-        getPaymentCurrentDueDate(p),
-      )
-      ? acc + p.amount
       : acc;
   }, 0);
   const monthlyDebts = virtualPayments.reduce((acc, p: Payment) => {
@@ -347,16 +295,11 @@ export function paymentsTotal(
   const totalBills = virtualPayments.reduce((acc, p: Payment) => {
     return p.type === "BILL" ? acc + p.amount : acc;
   }, 0);
-  const totalFunds = virtualPayments.reduce((acc, p: Payment) => {
-    return p.type === "FUND" ? acc + p.amount : acc;
-  }, 0);
   return {
     currentBills,
     totalBills,
     currentDebts,
-    currentFunds,
     monthlyDebts,
-    totalFunds,
     remainingDebt,
     totalMonthlyPayments,
   };
@@ -414,10 +357,7 @@ interface iDebtRemainder {
   payOffDate: Date;
   paymentsLeft: number;
 }
-export function calculatePayoffDate(
-  debt: Payment,
-  fromDate: Date = new Date(),
-): iDebtRemainder | null {
+export function calculatePayoffDate(debt: Payment, fromDate: Date = new Date()): iDebtRemainder | null {
   const paymentsLeft = calculateRemainingDebtPayments(debt);
   if (!paymentsLeft) return null;
 
@@ -505,8 +445,7 @@ export function calculateSnowballPayoffDate(
     // One month of payments: each debt gets min, target gets + snowball
     let remainder = 0;
     for (const d of state) {
-      const paymentPerPeriod =
-        d.amount + (d.id === targetId ? rollingSnowball : 0);
+      const paymentPerPeriod = d.amount + (d.id === targetId ? rollingSnowball : 0);
       const periods = periodsPerMonth(d.interval);
       const payment = paymentPerPeriod * (periods > 0 ? periods : 1);
       const applied = Math.min(d.balance, payment);
@@ -544,8 +483,7 @@ export function calculateSnowballPayoffDate(
         const idx = state.indexOf(target);
         if (idx !== -1) state.splice(idx, 1);
         if (state.length === 0) return currentDate;
-        targetId =
-          [...state].sort((a, b) => a.balance - b.balance)[0]?.id ?? null;
+        targetId = [...state].sort((a, b) => a.balance - b.balance)[0]?.id ?? null;
       } else {
         break;
       }
@@ -562,19 +500,9 @@ export function calculateSnowballPayoffDate(
  * Debts eligible to become the next snowball target, sorted lowest balance first.
  * Excludes the snowball row itself and (optionally) the debt just paid off.
  */
-export function getRemainingDebtsForSnowball(
-  payments: Payment[],
-  excludeId?: string,
-): Payment[] {
+export function getRemainingDebtsForSnowball(payments: Payment[], excludeId?: string): Payment[] {
   return payments
-    .filter(
-      (p) =>
-        p.type === "DEBT" &&
-        p.id !== SNOWBALL_PAYMENT_ID &&
-        p.id !== excludeId &&
-        p.total != null &&
-        p.total > 0,
-    )
+    .filter((p) => p.type === "DEBT" && p.id !== SNOWBALL_PAYMENT_ID && p.id !== excludeId && p.total != null && p.total > 0)
     .sort((a, b) => (a.total ?? 0) - (b.total ?? 0));
 }
 
@@ -583,24 +511,15 @@ export function getRemainingDebtsForSnowball(
  * with the lowest balance, excluding the snowball row itself and the debt just paid off.
  * Returns null when no debts remain.
  */
-export function pickNextSnowballTarget(
-  payments: Payment[],
-  paidOffId: string,
-): Payment | null {
+export function pickNextSnowballTarget(payments: Payment[], paidOffId: string): Payment | null {
   return getRemainingDebtsForSnowball(payments, paidOffId)[0] ?? null;
 }
 
 /** Sets the SNOWBALL row's amount, creating the row if it doesn't exist yet. */
-function upsertSnowballRow(
-  payments: Payment[],
-  amount: number,
-  payDate: Timestamp | null | undefined,
-): Payment[] {
+function upsertSnowballRow(payments: Payment[], amount: number, payDate: Timestamp | null | undefined): Payment[] {
   const existing = payments.find((p) => p.id === SNOWBALL_PAYMENT_ID);
   if (existing) {
-    return payments.map((p) =>
-      p.id === SNOWBALL_PAYMENT_ID ? { ...p, amount } : p,
-    );
+    return payments.map((p) => (p.id === SNOWBALL_PAYMENT_ID ? { ...p, amount } : p));
   }
   const snowballRow: Payment = {
     id: SNOWBALL_PAYMENT_ID,
@@ -632,11 +551,7 @@ export function rollSnowballOnPayoff(
 }
 
 /** Manually sets the snowball amount (e.g. from the Debt screen's edit form). */
-export function setSnowballAmount(
-  payments: Payment[],
-  amount: number,
-  payDate: Timestamp | null | undefined,
-): Payment[] {
+export function setSnowballAmount(payments: Payment[], amount: number, payDate: Timestamp | null | undefined): Payment[] {
   return upsertSnowballRow(payments, amount, payDate);
 }
 
@@ -653,11 +568,7 @@ export interface PayoffSurplusResult {
   paidOff: Payment | null;
 }
 
-export function applyPayoffSurplusToTarget(
-  payments: Payment[],
-  targetId: string,
-  remainder: number,
-): PayoffSurplusResult {
+export function applyPayoffSurplusToTarget(payments: Payment[], targetId: string, remainder: number): PayoffSurplusResult {
   const target = payments.find((p) => p.id === targetId);
   if (!target || remainder <= 0) {
     return { payments, applied: 0, leftover: Math.max(0, remainder), paidOff: null };
@@ -666,9 +577,7 @@ export function applyPayoffSurplusToTarget(
   const applied = Math.min(currentTotal, remainder);
   const newTotal = Math.max(0, currentTotal - applied);
   const updatedTarget = { ...target, total: newTotal };
-  const updatedPayments = payments.map((p) =>
-    p.id === targetId ? updatedTarget : p,
-  );
+  const updatedPayments = payments.map((p) => (p.id === targetId ? updatedTarget : p));
   return {
     payments: updatedPayments,
     applied,
@@ -681,9 +590,7 @@ export function applyPayoffSurplusToTarget(
  * Removes undefined values from an object.
  * Firebase doesn't accept undefined values, so this cleans objects before saving.
  */
-export function removeUndefinedValues<T extends Record<string, unknown>>(
-  obj: T,
-): Partial<T> {
+export function removeUndefinedValues<T extends Record<string, unknown>>(obj: T): Partial<T> {
   const cleaned: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj)) {
     if (value !== undefined) {
@@ -697,12 +604,8 @@ export function removeUndefinedValues<T extends Record<string, unknown>>(
  * Cleans an array of payments by removing undefined values from each.
  * Used before sending to Firebase which doesn't accept undefined values.
  */
-export function cleanPaymentsForFirebase(
-  payments: Payment[],
-): Record<string, unknown>[] {
-  return payments.map((payment) =>
-    removeUndefinedValues(payment as unknown as Record<string, unknown>),
-  );
+export function cleanPaymentsForFirebase(payments: Payment[]): Record<string, unknown>[] {
+  return payments.map((payment) => removeUndefinedValues(payment as unknown as Record<string, unknown>));
 }
 
 export const generateFreshPayment = () => {
@@ -721,25 +624,14 @@ export const generateFreshPayment = () => {
  * Adjusts a payment's dueDate to the current period, handling month cusp scenarios
  * Returns a new payment object without mutating the original
  */
-export function adjustPaymentToCurrentPeriod(
-  payment: Payment,
-  payPeriodInterval: Interval,
-  payDate: Timestamp,
-): Payment {
+export function adjustPaymentToCurrentPeriod(payment: Payment, payPeriodInterval: Interval, payDate: Timestamp): Payment {
   const today = startOfDay(new Date());
   const isOnCusp = isTodayCuspDate(payPeriodInterval, payDate);
-  const { start: periodStart, end: periodEnd } = getCurrentIntervalDateRange(
-    payPeriodInterval,
-    payDate,
-  );
-  const payPeriodCrossesMonths =
-    periodStart.getMonth() !== periodEnd.getMonth();
+  const { start: periodStart, end: periodEnd } = getCurrentIntervalDateRange(payPeriodInterval, payDate);
+  const payPeriodCrossesMonths = periodStart.getMonth() !== periodEnd.getMonth();
   const paymentDayNumber = payment.dueDate.toDate().getDate();
   const periodEndDayNumber = periodEnd.getDate();
-  const shouldMoveToNextMonth =
-    payPeriodCrossesMonths &&
-    paymentDayNumber <= periodEndDayNumber &&
-    isOnCusp;
+  const shouldMoveToNextMonth = payPeriodCrossesMonths && paymentDayNumber <= periodEndDayNumber && isOnCusp;
   // console.log("current payperiod dates: ", { periodStart, periodEnd, payment: { ...payment, dueDate: payment.dueDate.toDate() }, payPeriodCrossesMonths, paymentDayNumber, periodEndDayNumber, shouldMoveToNextMonth, isOnCusp })
 
   // YEARLY: only show in the payment's due month (e.g. Jan 16 → Jan 16 of period year, not every month)
@@ -749,9 +641,7 @@ export function adjustPaymentToCurrentPeriod(
     targetMonth = payment.dueDate.toDate().getMonth();
     targetYear = periodStart.getFullYear();
   } else {
-    targetMonth = shouldMoveToNextMonth
-      ? today.getMonth() + 1
-      : today.getMonth();
+    targetMonth = shouldMoveToNextMonth ? today.getMonth() + 1 : today.getMonth();
     targetYear = today.getFullYear();
   }
   const dayOfMonth = payment.dueDate.toDate().getDate();
@@ -780,9 +670,7 @@ export function isTodayCuspDate(payPeriod: Interval, payDate: Timestamp) {
 export function deriveIsPaid(payment: Payment, occurrenceDate?: Date): boolean {
   return (
     payment.paidDates?.some(
-      (pd) =>
-        startOfDay(pd.toDate()).getTime() ===
-        startOfDay(occurrenceDate ?? payment.dueDate.toDate()).getTime(),
+      (pd) => startOfDay(pd.toDate()).getTime() === startOfDay(occurrenceDate ?? payment.dueDate.toDate()).getTime(),
     ) ?? false
   );
 }
@@ -801,11 +689,7 @@ export function getPaymentOccurrencesInRange(
 ): Payment[] {
   // For monthly/yearly: only include if the (adjusted) due date falls within this pay period
   if (payment.interval === MONTHLY || payment.interval === YEARLY) {
-    const adjusted = adjustPaymentToCurrentPeriod(
-      payment,
-      payPeriodInterval,
-      payDate,
-    );
+    const adjusted = adjustPaymentToCurrentPeriod(payment, payPeriodInterval, payDate);
     const dueDate = startOfDay(adjusted.dueDate.toDate());
     if (isWithinInterval(dueDate, { start: rangeStart, end: rangeEnd })) {
       return [adjusted];
@@ -815,23 +699,14 @@ export function getPaymentOccurrencesInRange(
 
   // For SPLIT payments: divide monthly amount across user's pay periods
   if (payment.interval === "SPLIT") {
-    return getSplitPaymentOccurrencesInRange(
-      payment,
-      payPeriodInterval,
-      payDate,
-      rangeStart,
-      rangeEnd,
-    );
+    return getSplitPaymentOccurrencesInRange(payment, payPeriodInterval, payDate, rangeStart, rangeEnd);
   }
 
   // For weekly/biweekly, calculate all occurrences in the range
   const occurrences: Payment[] = [];
 
   // Find the first occurrence in or before the range
-  let currentDate = calculateCurrentIntervalStart(
-    payment.dueDate.toDate(),
-    payment.interval,
-  );
+  let currentDate = calculateCurrentIntervalStart(payment.dueDate.toDate(), payment.interval);
 
   // Walk forward and collect all occurrences in the range
   while (!isAfter(currentDate, rangeEnd)) {
@@ -843,10 +718,7 @@ export function getPaymentOccurrencesInRange(
       });
     }
 
-    currentDate =
-      payment.interval === WEEKLY
-        ? addWeeks(currentDate, 1)
-        : addWeeks(currentDate, 2);
+    currentDate = payment.interval === WEEKLY ? addWeeks(currentDate, 1) : addWeeks(currentDate, 2);
   }
 
   return occurrences;
@@ -857,7 +729,6 @@ export function getPaymentOccurrencesInRange(
  *
  * Two modes:
  * - BILL with SPLIT interval - Monthly recurring like rent, splits across current month's pay periods
- * - FUND type - Planned expense, splits from today until target dueDate
  *
  * For example: $2000/month rent with weekly pay periods in a 4-week month = 4 payments of $500 each
  */
@@ -871,80 +742,32 @@ function getSplitPaymentOccurrencesInRange(
   const occurrences: Payment[] = [];
   const today = startOfDay(new Date());
 
-  // Determine mode: recurring (Bill with split) vs Fund (planned expense with target date)
-  const isFund = payment.type === "FUND";
-
-  let periodCount: number;
-
-  if (!isFund) {
-    // RECURRING MODE (Bill with split): Calculate split based on current month
-    periodCount = getPayPeriodsInMonth(payDate, payPeriodInterval, today);
-  } else {
-    // FUND MODE: Calculate split amount using ALL periods until target date
-    const targetDate = startOfDay(payment.dueDate.toDate());
-
-    // If target date has passed, show nothing (will be handled by modal)
-    if (targetDate < today) {
-      return [];
-    }
-
-    periodCount = getPayPeriodsUntilDate(
-      payDate,
-      payPeriodInterval,
-      targetDate,
-    );
-  }
-
-  // Ensure periodCount is at least 1 to avoid division issues
-  periodCount = Math.max(periodCount, 1);
-
-  // Calculate the split amount per period
+  // Split a recurring bill across the pay periods in the current month
+  const periodCount = Math.max(getPayPeriodsInMonth(payDate, payPeriodInterval, today), 1);
   const splitAmount = Number((payment.amount / periodCount).toFixed(2));
 
-  // payDate is the user's pay date (could be recent or in the past)
-  // We need to find ALL pay dates in the display range, so:
-  // 1. Walk BACKWARD from payDate to find a pay date before the range start
-  // 2. Then walk FORWARD to collect all pay dates in the range
+  // payDate is the user's pay date (could be recent or in the past).
+  // To find ALL pay dates in the display range:
+  // 1. Walk BACKWARD from payDate to a pay date at or before the range start
+  // 2. Walk FORWARD to the first pay date within the range
   let currentPayDate = startOfDay(payDate.toDate());
 
   if (payPeriodInterval === WEEKLY || payPeriodInterval === BIWEEKLY) {
-    // First, walk BACKWARD to find a pay date at or before displayRangeStart
-    while (currentPayDate > displayRangeStart) {
-      if (payPeriodInterval === WEEKLY) {
-        currentPayDate = subWeeks(currentPayDate, 1);
-      } else {
-        currentPayDate = subWeeks(currentPayDate, 2);
-      }
-    }
+    const step = payPeriodInterval === WEEKLY ? 1 : 2;
 
-    // Now walk FORWARD to find the first pay date that's within or after the range start
+    while (currentPayDate > displayRangeStart) {
+      currentPayDate = subWeeks(currentPayDate, step);
+    }
     while (currentPayDate < displayRangeStart) {
-      if (payPeriodInterval === WEEKLY) {
-        currentPayDate = addWeeks(currentPayDate, 1);
-      } else {
-        currentPayDate = addWeeks(currentPayDate, 2);
-      }
+      currentPayDate = addWeeks(currentPayDate, step);
     }
   } else {
-    // For monthly payPeriodInterval, just use displayRangeStart
+    // Monthly pay period: just use the start of the range
     currentPayDate = displayRangeStart;
   }
 
-  // For Fund, cap the display at the target date
-  const effectiveEnd = isFund
-    ? payment.dueDate.toDate() < displayRangeEnd
-      ? payment.dueDate.toDate()
-      : displayRangeEnd
-    : displayRangeEnd;
-
-  // Generate virtual payments for each pay date in the display range
-  while (currentPayDate <= effectiveEnd) {
-    const occurrenceTime = startOfDay(currentPayDate).getTime();
-    const isPaid =
-      payment.paidDates?.some(
-        (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime,
-      ) ?? false;
-
+  // Generate a virtual payment for each pay date in the display range
+  while (currentPayDate <= displayRangeEnd) {
     occurrences.push({
       ...payment,
       id: `${payment.id}-SPLIT-${currentPayDate.getTime()}`,
@@ -952,18 +775,17 @@ function getSplitPaymentOccurrencesInRange(
       dueDate: Timestamp.fromDate(currentPayDate),
     });
 
-    // Move to next pay period
     if (payPeriodInterval === WEEKLY) {
       currentPayDate = addWeeks(currentPayDate, 1);
     } else if (payPeriodInterval === BIWEEKLY) {
       currentPayDate = addWeeks(currentPayDate, 2);
     } else {
-      // For monthly payPeriodInterval, only one occurrence
+      // Monthly pay period: only one occurrence
       break;
     }
   }
 
-  // Ensure at least one occurrence (edge case - use calculated splitAmount, not full amount)
+  // Edge case: ensure at least one occurrence (using splitAmount, not the full amount)
   if (occurrences.length === 0) {
     occurrences.push({
       ...payment,
@@ -988,25 +810,14 @@ export function getVirtualPaymentsForCurrentPeriod(
   payDate: Timestamp,
 ): Payment[] {
   const virtualPayments: Payment[] = [];
-  const { start: periodStart, end: periodEnd } = getCurrentIntervalDateRange(
-    payPeriodInterval,
-    payDate,
-  );
+  const { start: periodStart, end: periodEnd } = getCurrentIntervalDateRange(payPeriodInterval, payDate);
 
   for (const payment of payments) {
-    const occurrences = getPaymentOccurrencesInRange(
-      payment,
-      payPeriodInterval,
-      payDate,
-      periodStart,
-      periodEnd,
-    );
+    const occurrences = getPaymentOccurrencesInRange(payment, payPeriodInterval, payDate, periodStart, periodEnd);
     virtualPayments.push(...occurrences);
   }
 
-  return virtualPayments.sort(
-    (a, b) => a.dueDate.toMillis() - b.dueDate.toMillis(),
-  );
+  return virtualPayments.sort((a, b) => a.dueDate.toMillis() - b.dueDate.toMillis());
 }
 
 /*
@@ -1025,11 +836,7 @@ export function removeVirtualIdPortion(p: Payment) {
  * @param targetMonth - Optional: the month to calculate for (defaults to current month)
  * @returns Number of pay periods in the month
  */
-export function getPayPeriodsInMonth(
-  payDate: Timestamp,
-  interval: Interval,
-  targetMonth: Date = new Date(),
-): number {
+export function getPayPeriodsInMonth(payDate: Timestamp, interval: Interval, targetMonth: Date = new Date()): number {
   if (!interval || interval === "YEARLY" || interval === "SPLIT") {
     // YEARLY and SPLIT don't make sense here, MONTHLY is always 1
     return 1;
@@ -1083,23 +890,15 @@ export function getPayPeriodsInMonth(
 
 /**
  * Calculate total number of pay periods from today until a target date.
- * Used for Fund (planned expense) mode to divide a target amount across remaining pay periods.
+ * Used for split payments 
  *
  * @param payDate - User's pay date (used to align pay periods)
  * @param payPeriodInterval - User's pay period interval (WEEKLY, BIWEEKLY, MONTHLY)
  * @param targetDate - The target date for the planned expense
  * @returns Number of pay periods from today until target date
  */
-export function getPayPeriodsUntilDate(
-  payDate: Timestamp,
-  payPeriodInterval: Interval,
-  targetDate: Date,
-): number {
-  if (
-    !payPeriodInterval ||
-    payPeriodInterval === "YEARLY" ||
-    payPeriodInterval === "SPLIT"
-  ) {
+export function getPayPeriodsUntilDate(payDate: Timestamp, payPeriodInterval: Interval, targetDate: Date): number {
+  if (!payPeriodInterval || payPeriodInterval === "YEARLY" || payPeriodInterval === "SPLIT") {
     return 1;
   }
 

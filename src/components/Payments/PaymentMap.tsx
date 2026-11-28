@@ -2,11 +2,7 @@ import { format, getMonth } from "date-fns";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { Payment } from "../../types";
-import {
-  deriveIsPaid,
-  getEffectivePaymentAmount,
-  isDateInCurrentPayPeriod,
-} from "../../util/util";
+import { deriveIsPaid, getEffectivePaymentAmount, getNextPayDate } from "../../util/util";
 import { MyText } from "../MyText";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
@@ -19,17 +15,12 @@ interface PaymentMapProps {
   handleEditBill: (payment: Payment) => void;
   paymentsThisPeriod: Payment[];
 }
-export default function PaymentMap({
-  handleEditBill,
-  handleUpdatePaid,
-  paymentsThisPeriod,
-}: PaymentMapProps) {
+export default function PaymentMap({ handleEditBill, handleUpdatePaid, paymentsThisPeriod }: PaymentMapProps) {
   const { payments, payPeriodInterval } = useDatabase();
   const { transactions } = useTransactions();
-  const [view, setView] = useState<"CURRENT" | "ALL" | "TRANSACTIONS">(
-    "CURRENT",
-  );
+  const [view, setView] = useState<"CURRENT" | "ALL" | "TRANSACTIONS">("CURRENT");
   const [allMonthlyPayments, setAllMonthlyPayments] = useState<Payment[]>([]);
+  const { payDate } = useDatabase();
 
   useEffect(() => {
     const currentMonth = getMonth(new Date());
@@ -38,13 +29,7 @@ export default function PaymentMap({
       if (p.type === "DEBT" && typeof p.total === "number" && p.total <= 0) {
         return false;
       }
-      if (p.type === "FUND") {
-        return false;
-      }
-      if (
-        p.interval === "YEARLY" &&
-        p.dueDate.toDate().getMonth() !== currentMonth
-      ) {
+      if (p.interval === "YEARLY" && p.dueDate.toDate().getMonth() !== currentMonth) {
         return false;
       }
       return true;
@@ -53,13 +38,7 @@ export default function PaymentMap({
     setAllMonthlyPayments(filtered);
   }, [payments]);
 
-  function RenderPayment({
-    p,
-    hidePayments,
-  }: {
-    p: Payment;
-    hidePayments?: boolean;
-  }) {
+  function RenderPayment({ p, hidePayments }: { p: Payment; hidePayments?: boolean }) {
     const isSplitPayment = p.id.includes("-SPLIT-");
     const typeColor =
       p.type === "BILL"
@@ -86,11 +65,7 @@ export default function PaymentMap({
             >
               {deriveIsPaid(p) ? (
                 <View className="w-full h-[2rem] justify-center items-center">
-                  <FontAwesome
-                    name="check-circle"
-                    color={"#076346"}
-                    size={18}
-                  />
+                  <FontAwesome name="check-circle" color={"#076346"} size={18} />
                 </View>
               ) : (
                 <View className="w-full h-[2rem] justify-center items-center">
@@ -106,9 +81,7 @@ export default function PaymentMap({
           >
             <View className="h-2 bg-my-red-base" />
             <View className="flex-1 items-center justify-center">
-              <MyText className="text-sm font-bold">
-                {format(p.dueDate.toDate(), "do")}
-              </MyText>
+              <MyText className="text-sm font-bold">{format(p.dueDate.toDate(), "do")}</MyText>
             </View>
           </View>
 
@@ -118,33 +91,22 @@ export default function PaymentMap({
             >
               {isSplitPayment ? "SPLIT" : p.type?.toUpperCase()}
             </MyText>
-            <MyText
-              numberOfLines={1}
-              className={`max-w-[9rem] text-sm ${deriveIsPaid(p) && "text-my-black-light"}`}
-            >
+            <MyText numberOfLines={1} className={`max-w-[9rem] text-sm ${deriveIsPaid(p) && "text-my-black-light"}`}>
               {p.name}
             </MyText>
           </View>
 
           {p.total != null ? (
             <View className="flex-row items-center justify-end gap-[2px] w-16 mr-[1rem]">
-              <MyText
-                className={`w-fit text-sm ${deriveIsPaid(p) && "text-my-black-light"}`}
-              >
+              <MyText className={`w-fit text-sm ${deriveIsPaid(p) && "text-my-black-light"}`}>
                 ${Math.ceil(getEffectivePaymentAmount(p))}
               </MyText>
               <MyText>/</MyText>
-              <MyText
-                className={`w-fit text-sm ${deriveIsPaid(p) && "text-my-black-light"}`}
-              >
-                {Math.ceil(p.total)}
-              </MyText>
+              <MyText className={`w-fit text-sm ${deriveIsPaid(p) && "text-my-black-light"}`}>{Math.ceil(p.total)}</MyText>
             </View>
           ) : (
             <View className="items-end justify-center gap-[2px] w-16 mr-[1rem]">
-              <MyText
-                className={`w-fit text-sm ${deriveIsPaid(p) && "text-my-black-light"}`}
-              >
+              <MyText className={`w-fit text-sm ${deriveIsPaid(p) && "text-my-black-light"}`}>
                 ${getEffectivePaymentAmount(p).toFixed(2)}
               </MyText>
             </View>
@@ -155,15 +117,11 @@ export default function PaymentMap({
   }
 
   const currentPaymentsTotal = `$${paymentsThisPeriod
-    .reduce(
-      (acc, p) => (deriveIsPaid(p) ? acc : getEffectivePaymentAmount(p) + acc),
-      0,
-    )
+    .reduce((acc, p) => (deriveIsPaid(p) ? acc : getEffectivePaymentAmount(p) + acc), 0)
     .toFixed(2)}`;
 
   const monthlyPaymentsMinusFunds = `$${allMonthlyPayments
     .reduce((acc, p) => {
-      if (p.type === "FUND") return acc;
       return p.amount + acc;
     }, 0)
     .toFixed(2)}`;
@@ -171,29 +129,16 @@ export default function PaymentMap({
   return (
     <View className="h-fit w-full mb-8">
       <View className="w-full flex-row items-center border-y-2 bg-my-white-base">
-        <Pressable className="w-1/3" onPress={() => setView("CURRENT")}>
-          <MyText
-            className={`text-center px-4 py-2 w-full ${view === "CURRENT" && "bg-my-white-dark"}`}
-          >
-            Due
+        <Pressable className="w-1/2" onPress={() => setView("CURRENT")}>
+          <MyText className={`text-center px-4 py-2 w-full ${view === "CURRENT" && "bg-my-white-dark"}`}>
+            Due by {format(getNextPayDate(payPeriodInterval, payDate!), "LLL dd")}
           </MyText>
         </Pressable>
         <View className="w-[1px] h-full bg-black"></View>
-        <Pressable className="w-1/3" onPress={() => setView("ALL")}>
-          <MyText
-            className={`px-8 py-2 text-center ${view === "ALL" && "bg-my-white-dark"}`}
-          >
-            All Bills
-          </MyText>
+        <Pressable className="w-1/2" onPress={() => setView("ALL")}>
+          <MyText className={`px-8 py-2 text-center ${view === "ALL" && "bg-my-white-dark"}`}>All Bills</MyText>
         </Pressable>
         <View className="w-[1px] h-full bg-black"></View>
-        <Pressable className="w-1/3" onPress={() => setView("TRANSACTIONS")}>
-          <MyText
-            className={`w-full py-2 px-4 text-center ${view === "TRANSACTIONS" && "bg-my-white-dark"}`}
-          >
-            History
-          </MyText>
-        </Pressable>
       </View>
       <ScrollView className="">
         <View className="h-fit w-full mb-8">
@@ -203,6 +148,7 @@ export default function PaymentMap({
                 <MyText>Remainder Due This Period: </MyText>
                 <MyText>{currentPaymentsTotal}</MyText>
               </View>
+
               {paymentsThisPeriod.map((p) => (
                 <RenderPayment key={p.id} p={p} />
               ))}
@@ -217,10 +163,7 @@ export default function PaymentMap({
                 <MyText>{monthlyPaymentsMinusFunds}</MyText>
               </View>
               {[...allMonthlyPayments]
-                .sort(
-                  (a, b) =>
-                    a.dueDate.toDate().getDate() - b.dueDate.toDate().getDate(),
-                )
+                .sort((a, b) => a.dueDate.toDate().getDate() - b.dueDate.toDate().getDate())
                 .map((p) => (
                   <RenderPayment key={p.id} p={p} hidePayments />
                 ))}

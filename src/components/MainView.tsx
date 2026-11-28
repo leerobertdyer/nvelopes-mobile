@@ -17,7 +17,6 @@ import {
   deriveIsPaid,
   getRemainingDebtsForSnowball,
   getVirtualPaymentsForCurrentPeriod,
-  randomUUID,
   removeVirtualIdPortion,
   rollSnowballOnPayoff,
   type SurplusDisposition,
@@ -28,8 +27,7 @@ import AddIncomeForm from "./Forms/AddIncomeForm";
 import { useDatabase } from "../context/DatabaseContext/useDatabase";
 import { useAuth } from "../context/AuthContext/useAuth";
 import { useBudget } from "../context/BudgetContext/useBudget";
-import { Button, Modal, Pressable, ScrollView, Text, View } from "react-native";
-import SplitPaymentDueModal from "./Payments/SplitPaymentDueModal";
+import { Button, Pressable, ScrollView, Text, View } from "react-native";
 import CongratsPaidOffModal from "./Payments/CongratsPaidOffModal";
 import BigPayment from "./Payments/BigPayment";
 import PaymentForm from "./Forms/PaymentForm";
@@ -85,7 +83,6 @@ export default function MainView() {
   const [showLoading, setShowLoading] = useState(false);
   const [isAddingCashToEnvelope, setIsAddingCashToEnvelope] = useState(false);
   const [showClearEnvelopes, setShowClearNvelopes] = useState(false);
-  const [dueFundPayment, setDueFundPayment] = useState<Payment | null>(null);
   const [dismissedDuePayments, setDismissedDuePayments] = useState<Set<string>>(new Set());
   const [showBudgetSettings, setShowBudgetSettings] = useState(false);
   const [pendingPayoff, setPendingPayoff] = useState<{
@@ -100,67 +97,15 @@ export default function MainView() {
   const paymentsThisPeriod = useMemo(() => {
     if (!payDate || !payments?.length || !payPeriodInterval) return [];
     const virtual = getVirtualPaymentsForCurrentPeriod(payments, payPeriodInterval, payDate);
+    console.log({virtual, payments})
     // Hide paid-off debts from main payment view (they appear on Debt page)
     return virtual.filter((p) => !(p.type === "DEBT" && p.total != null && p.total <= 0));
   }, [payments, payDate, payPeriodInterval]);
 
-  // Check for due Fund (planned expense) payments
-  useEffect(() => {
-    if (!payments) return;
-
-    const today = startOfDay(new Date());
-
-    // Find Fund payments that are due (dueDate <= today) and not fully paid
-    const duePayment = payments.find((p) => {
-      if (p.type !== "FUND") return false;
-      if (dismissedDuePayments.has(p.id)) return false;
-      const dueDate = startOfDay(p.dueDate.toDate());
-      return dueDate <= today && !deriveIsPaid(p);
-    });
-
-    if (duePayment && !dueFundPayment) {
-      setDueFundPayment(duePayment);
-    }
-  }, [payments, dismissedDuePayments, dueFundPayment]);
 
   async function handleEditPayment(p: Payment) {
     setPaymentToEdit(p);
     setShowPaymentInputs(true);
-  }
-
-  // Handler for marking a Fund (planned expense) payment as fully paid
-  async function handleMarkFundPaid(payment: Payment) {
-    if (!user) return;
-    const updatedPayments = payments.map((p) => (p.id === payment.id ? { ...p, paid: true } : p));
-    setPayments(updatedPayments);
-    await editPayments(updatedPayments, activeBudgetId!);
-    setDueFundPayment(null);
-    Toast.show({ type: "success", text1: `${payment.name} marked as paid!` });
-  }
-
-  // Handler for extending a Fund payment's target date
-  async function handleExtendFundDate(payment: Payment) {
-    if (!user) return;
-    // Extend by 1 month by default
-    const newDueDate = addMonths(payment.dueDate.toDate(), 1);
-    const updatedPayments = payments.map((p) =>
-      p.id === payment.id ? { ...p, dueDate: firestore.Timestamp.fromDate(newDueDate) } : p,
-    );
-    setPayments(updatedPayments);
-    await editPayments(updatedPayments, activeBudgetId!);
-    setDueFundPayment(null);
-    Toast.show({
-      type: "success",
-      text1: `${payment.name} extended by 1 month`,
-    });
-  }
-
-  // Handler for dismissing the Fund due modal (remind later)
-  function handleDismissFundModal() {
-    if (dueFundPayment) {
-      setDismissedDuePayments((prev) => new Set(prev).add(dueFundPayment.id));
-    }
-    setDueFundPayment(null);
   }
 
   function handleDeleteBill(p: Payment) {
@@ -190,11 +135,6 @@ export default function MainView() {
     });
     resetPaymentState();
     Toast.show({ type: "success", text1: "Payment deleted" });
-  }
-
-  function handleAddPayment() {
-    setPaymentToEdit(null);
-    setShowPaymentInputs(true);
   }
 
   function resetPaymentState() {
@@ -618,7 +558,7 @@ export default function MainView() {
     if (cashAmount <= 0 || !user) return;
     setLoadingText(spending ? "Spending Cash..." : "Adding Cash...");
     setShowLoading(true);
-    const amountSpentOrAdded = spending ? (cashAmount * -1) : cashAmount;
+    const amountSpentOrAdded = spending ? cashAmount * -1 : cashAmount;
     await editDatabaseWithTransaction({
       t: {
         id: createTransactionId(user),
@@ -733,18 +673,6 @@ export default function MainView() {
           handleDeleteEnvelope={() => deleteEnvelope()}
         />
       </>
-    );
-  }
-
-  // Show modal for due Fund (planned expense) payments
-  if (dueFundPayment) {
-    return (
-      <SplitPaymentDueModal
-        payment={dueFundPayment}
-        onMarkPaid={handleMarkFundPaid}
-        onExtendDate={handleExtendFundDate}
-        onDismiss={handleDismissFundModal}
-      />
     );
   }
 
@@ -864,7 +792,7 @@ export default function MainView() {
       <View className="w-full text-center items-center flex-1 bg-my-white-light">
         {showLoading && <Loading text={loadingText} />}
         <DraxProvider>
-          <ScrollView bounces={false} className="w-full h-full" contentContainerClassName="items-center">
+          <ScrollView className="w-full h-full" contentContainerClassName="items-center">
             <Header
               handleAddCash={() => setIsAddingCash(true)}
               handleSpendCash={() => setIsSpendingCash(true)}
@@ -910,6 +838,11 @@ export default function MainView() {
           </ScrollView>
         </DraxProvider>
         <View className="my-4" />
+        {content === "BILLS" && (
+          <View className="mb-2 w-full">
+            <Btn color="red" text="New Bill" h="h-[2.5rem] mb-2" onPress={() => setShowPaymentInputs(true)} />
+          </View>
+        )}
         <ContentSelector content={content} setContent={setContent} />
       </View>
       {pendingPayoff && (

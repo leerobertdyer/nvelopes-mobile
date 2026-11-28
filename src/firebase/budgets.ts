@@ -15,17 +15,13 @@ export function budgetDataRef(budgetId: string) {
 
 const BUDGET_INVITES_COLLECTION = "budgetInvites";
 
-const defaultBudgetName = (user: User) =>
-  user?.email ? `${user.email}'s Budget` : "My Budget";
+const defaultBudgetName = (user: User) => (user?.email ? `${user.email}'s Budget` : "My Budget");
 
 /**
  * Creates the first budget for a user (first-time setup). Writes budget meta, data doc, and users/{uid}/budgets/{budgetId}.
  * Returns the new budgetId or null on failure.
  */
-export async function createFirstBudget(
-  user: User,
-  name?: string,
-): Promise<string | null> {
+export async function createFirstBudget(user: User, name?: string): Promise<string | null> {
   if (!user) {
     console.error("createFirstBudget: No user provided");
     return null;
@@ -35,9 +31,7 @@ export async function createFirstBudget(
     const newBudgetRef = firestore().collection("budgets").doc();
     const budgetId = newBudgetRef.id;
     const dataRef = budgetDataRef(budgetId);
-    const userBudgetRef = firestore().doc(
-      `users/${user.uid}/budgets/${budgetId}`,
-    );
+    const userBudgetRef = firestore().doc(`users/${user.uid}/budgets/${budgetId}`);
 
     const budgetMeta = {
       name: budgetName,
@@ -86,9 +80,7 @@ export async function createBudget(
     const newBudgetRef = firestore().collection("budgets").doc();
     const budgetId = newBudgetRef.id;
     const dataRef = budgetDataRef(budgetId);
-    const userBudgetRef = firestore().doc(
-      `users/${user.uid}/budgets/${budgetId}`,
-    );
+    const userBudgetRef = firestore().doc(`users/${user.uid}/budgets/${budgetId}`);
     const budgetMeta = {
       name: budgetName,
       ownerId: user.uid,
@@ -132,15 +124,15 @@ export async function getBudgetMeta(budgetId: string) {
     memberIds: (d.memberIds as string[]) ?? [],
     memberEmails: (d.memberEmails as Record<string, string>) ?? undefined,
     createdAt: d.createdAt,
+    payPeriodInterval: d.payPeriodInterval,
+    payDate: d.payDate,
   };
 }
 
 // Gets budget metadata INCLUDING envelope/bill count and available budget
 export async function getAllBudgetData(budgetId: string): Promise<BudgetMeta> {
   const meta = await getBudgetMeta(budgetId);
-  const snapshot = firestore()
-    .doc(`budgets/${budgetId}/data/${BUDGET_DATA_DOC_ID}`)
-    .get();
+  const snapshot = firestore().doc(`budgets/${budgetId}/data/${BUDGET_DATA_DOC_ID}`).get();
   const data = (await snapshot).data();
   return {
     id: budgetId,
@@ -152,14 +144,13 @@ export async function getAllBudgetData(budgetId: string): Promise<BudgetMeta> {
     envelopeCount: data?.envelopes.length,
     billCount: data?.payments.length,
     availableBudget: data?.totalSpendingBudget,
+    payPeriodInterval: data?.payPeriodInterval,
+    payDate: data?.payDate,
   };
 }
 
 /** Owner: delete budget, its data doc, and all users' budget refs. Member: leave (remove self from memberIds, delete own ref). */
-export async function deleteBudgetAsOwner(
-  ownerId: string,
-  budgetId: string,
-): Promise<boolean> {
+export async function deleteBudgetAsOwner(ownerId: string, budgetId: string): Promise<boolean> {
   try {
     const meta = await getBudgetMeta(budgetId);
     console.log("[nvelope invite] meta:", meta, "ownerId:", ownerId);
@@ -179,19 +170,14 @@ export async function deleteBudgetAsOwner(
 }
 
 /** Member leaves budget: remove self from memberIds, delete own users/{uid}/budgets/{budgetId}. */
-export async function leaveBudget(
-  userId: string,
-  budgetId: string,
-): Promise<boolean> {
+export async function leaveBudget(userId: string, budgetId: string): Promise<boolean> {
   try {
     const meta = await getBudgetMeta(budgetId);
     if (!meta || meta.ownerId === userId) return false;
     await budgetRef(budgetId).update({
       memberIds: firestore.FieldValue.arrayRemove(userId),
     });
-    const userBudgetRef = firestore().doc(
-      `users/${userId}/budgets/${budgetId}`,
-    );
+    const userBudgetRef = firestore().doc(`users/${userId}/budgets/${budgetId}`);
     await userBudgetRef.delete();
     return true;
   } catch (error) {
@@ -201,20 +187,14 @@ export async function leaveBudget(
 }
 
 /** Owner removes a member from the budget. */
-export async function removeMemberFromBudget(
-  ownerId: string,
-  budgetId: string,
-  memberId: string,
-): Promise<boolean> {
+export async function removeMemberFromBudget(ownerId: string, budgetId: string, memberId: string): Promise<boolean> {
   try {
     const meta = await getBudgetMeta(budgetId);
     if (!meta || meta.ownerId !== ownerId || memberId === ownerId) return false;
     await budgetRef(budgetId).update({
       memberIds: firestore.FieldValue.arrayRemove(memberId),
     });
-    const userBudgetRef = firestore().doc(
-      `users/${memberId}/budgets/${budgetId}`,
-    );
+    const userBudgetRef = firestore().doc(`users/${memberId}/budgets/${budgetId}`);
     await userBudgetRef.delete();
     return true;
   } catch (error) {
@@ -224,11 +204,7 @@ export async function removeMemberFromBudget(
 }
 
 /** Update budget name and sync to all members' user budget refs. Caller must be owner or member. */
-export async function updateBudgetName(
-  budgetId: string,
-  _userId: string,
-  newName: string,
-): Promise<boolean> {
+export async function updateBudgetName(budgetId: string, _userId: string, newName: string): Promise<boolean> {
   const trimmed = newName.trim();
   if (!trimmed) return false;
   try {
@@ -253,9 +229,7 @@ export async function completeDemoWithDefaults(user: User): Promise<boolean> {
   if (!user) return false;
   try {
     const now = new Date();
-    const defaultPayDate = firestore.Timestamp.fromDate(
-      new Date(now.getFullYear(), now.getMonth(), 1),
-    );
+    const defaultPayDate = firestore.Timestamp.fromDate(new Date(now.getFullYear(), now.getMonth(), 1));
     const budgetId = await createFirstBudget(user);
     if (!budgetId) return false;
     const dataRef = budgetDataRef(budgetId);
@@ -267,14 +241,9 @@ export async function completeDemoWithDefaults(user: User): Promise<boolean> {
   }
 }
 
-export async function getTransactions(
-  budgetId: string,
-): Promise<NvelopesTransaction[]> {
+export async function getTransactions(budgetId: string): Promise<NvelopesTransaction[]> {
   try {
-    const snapshot = await firestore()
-      .collection(`budgets/${budgetId}/transactions`)
-      .orderBy("createdAt", "desc")
-      .get();
+    const snapshot = await firestore().collection(`budgets/${budgetId}/transactions`).orderBy("createdAt", "desc").get();
     return snapshot.docs.map((doc) => doc.data() as NvelopesTransaction);
   } catch (error) {
     console.error("getTransaction error: ", error);

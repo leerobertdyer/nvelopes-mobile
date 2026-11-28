@@ -2,10 +2,8 @@ import { View } from "react-native";
 import Btn from "../Buttons/Btn";
 import { MyText } from "../MyText";
 
-export type PaymentTypeOption = "BILL" | "DEBT" | "FUND";
-
 interface IPaymentTypeSelector {
-  onSelect: (type: PaymentTypeOption) => void;
+  onSelect: (type: "BILL" | "DEBT") => void;
   onSkip?: () => void;
   onBack?: () => void;
   skipText?: string;
@@ -32,10 +30,6 @@ export default function PaymentTypeSelector({
 
       <Btn color="blue" shadow onPress={() => onSelect("DEBT")} text='DEBT'>
         <MyText className="text-xs text-gray-700">Loans, Credit Cards, etc.</MyText>
-      </Btn>
-
-      <Btn color="green" shadow onPress={() => onSelect("FUND")} text="FUND">
-        <MyText className="text-xs text-gray-300">Planned expenses</MyText>
       </Btn>
 
       {onSkip && <Btn color="green" shadow onPress={onSkip} text={skipText}></Btn>}

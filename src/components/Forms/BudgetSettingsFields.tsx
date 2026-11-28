@@ -12,6 +12,7 @@ import { getBudgetMeta, updateBudgetName } from "../../firebase/budgets";
 import { useAuth } from "../../context/AuthContext/useAuth";
 import Toast from "react-native-toast-message";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
+import { editPayDate, editPayPeriodInterval } from "../../firebase/editData";
 
 export interface BudgetSettingsFieldsProps {
   /** "create" = interval + pay date only; "edit" = Edit Remaining Balance card + interval + pay date */
@@ -25,7 +26,6 @@ export interface BudgetSettingsFieldsProps {
   /** Optional label for interval (e.g. "Pay period interval" in create) */
   intervalLabel?: string;
   budgetMeta: BudgetMeta | null;
-  setBudgetMeta: (b: BudgetMeta) => void;
   onSave?: () => void;
 }
 
@@ -42,12 +42,10 @@ export default function BudgetSettingsFields({
   onEditRemainingBalance,
   intervalLabel,
   budgetMeta,
-  setBudgetMeta,
   onSave,
 }: BudgetSettingsFieldsProps) {
   const { activeBudgetId, refetchBudgets } = useBudget();
   const { user } = useAuth();
-  const { payPeriodInterval } = useDatabase();
 
   const newPaymentDate = payDate ? format(payDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"); // Default to today's date string if it's a brand new payment
 
@@ -57,28 +55,12 @@ export default function BudgetSettingsFields({
   const [isSavingBudgetName, setIsSavingBudgetName] = useState(false);
   const [editingBudgetName, setEditingBudgetName] = useState(false);
 
-  function handleIntervalChange(i: Interval) {
-    setShowIntervalSelector(false);
-    onIntervalChange(i);
-    onSave?.();
-  }
-
   async function handleSaveBudgetName() {
     if (!user || !activeBudgetId || !budgetNameInput.trim()) return;
     setIsSavingBudgetName(true);
     try {
       const ok = await updateBudgetName(activeBudgetId, user.uid, budgetNameInput.trim());
       if (ok) {
-        const meta = await getBudgetMeta(activeBudgetId);
-        if (meta)
-          setBudgetMeta({
-            id: activeBudgetId,
-            name: meta.name,
-            ownerId: meta.ownerId,
-            memberIds: meta.memberIds,
-            memberEmails: meta.memberEmails,
-            createdAt: meta.createdAt,
-          });
         await refetchBudgets();
         setEditingBudgetName(false);
         setBudgetNameInput("");
@@ -91,10 +73,38 @@ export default function BudgetSettingsFields({
       onSave?.();
     }
   }
+
+  async function handleIntervalChange(i: Interval) {
+    if (!user || !activeBudgetId) return;
+    onIntervalChange(i);
+    try {
+      await editPayPeriodInterval(i, activeBudgetId);
+      await refetchBudgets();
+      Toast.show({ type: "success", text1: "Budget interval updated" });
+    } catch (error) {
+      Toast.show({ type: "error", text1: "Failed to update budget interval" });
+    }
+    setShowIntervalSelector(false);
+    onSave?.();
+  }
+
+  async function handlePayDateChange(d: DateData) {
+    if (!user || !activeBudgetId) return;
+    onPayDateChange(d);
+    try {
+      await editPayDate(new Date(d.year, d.month, d.day), activeBudgetId);
+      await refetchBudgets();
+      Toast.show({ type: "success", text1: "Budget paydate updated" });
+    } catch (error) {
+      Toast.show({ type: "error", text1: "Failed to update budget paydate" });
+    }
+    setShowPayDateCalendar(false);
+    onSave?.();
+  }
   return (
     <View className="items-center w-full h-fit gap-4 mb-4">
       {budgetMeta && mode === "edit" && (
-        <Btn h="h-[2.5rem[" color="gold" text="Edit Name" onPress={() => setEditingBudgetName(true)} />
+        <Btn h="h-[2.5rem]" color="gold" text="Edit Name" onPress={() => setEditingBudgetName(true)} />
       )}
       {editingBudgetName && (
         <Modal>
@@ -174,9 +184,7 @@ export default function BudgetSettingsFields({
                   textDayHeaderFontSize: 16,
                 }}
                 onDayPress={(d) => {
-                  setShowPayDateCalendar(false);
-                  onPayDateChange(d);
-                  onSave?.();
+                  handlePayDateChange(d);
                 }}
                 date={newPaymentDate}
               />

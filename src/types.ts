@@ -8,13 +8,7 @@ export interface Nvelope {
   spent: number;
   order?: number;
 }
-export type ViewContent =
-  | "NVELOPES"
-  | "BILLS"
-  | "ACCOUNT"
-  | "BUDGET"
-  | "DEBT"
-  | "SETTINGS";
+export type ViewContent = "NVELOPES" | "BILLS" | "ACCOUNT" | "BUDGET" | "DEBT" | "SETTINGS";
 
 export type NvelopesTransactionType =
   | "DELETE"
@@ -44,7 +38,6 @@ export interface NvelopesTransaction {
 
 export type InviteStatus = "pending" | "consumed" | "expired" | "revoked";
 
-
 export interface Invite {
   budgetId: string;
   budgetName: string;
@@ -58,6 +51,8 @@ export interface Invite {
   consumedAt: Timestamp | null;
 }
 
+export type PaymentTypeOption = "DEBT" | "BILL" | undefined;
+
 export interface Payment {
   id: string;
   name: string;
@@ -66,18 +61,15 @@ export interface Payment {
   interval: Interval;
   paidDates?: Timestamp[]; // for tracking payments that span multiple intervals (ie WEEKLY | BIWEEKLY | SPLIT)
   paidAmounts?: Record<string, number>; // for DEBT: key = occurrence timestamp string, value = amount applied (so we can reverse on unmark)
-  type: "DEBT" | "BILL" | "FUND" | undefined;
+  type: PaymentTypeOption;
   isInInterval?: boolean;
   total?: number; // Running Total Remaining
   originalTotal?: number; // Original Amount due when added to budget
   interestRate?: number;
-  recurring?: boolean; // For SPLIT: true = monthly recurring (like rent), false = Fund (planned expense to save toward)
+  recurring?: boolean; // For SPLIT: true = monthly recurring (like rent)
   paymentsLeft?: number;
   payOffDate?: string;
 }
-
-export type PaymentType = "BILL" | "DEBT" | "FUND";
-
 export interface OneTimeAmount {
   id: string;
   name: string;
@@ -87,13 +79,7 @@ export interface OneTimeAmount {
 
 // PreviousIntervalDetails removed - see FUTURE FEATURE comment in editData.ts
 
-export type Interval =
-  | "WEEKLY"
-  | "BIWEEKLY"
-  | "MONTHLY"
-  | "YEARLY"
-  | "SPLIT"
-  | undefined;
+export type Interval = "WEEKLY" | "BIWEEKLY" | "MONTHLY" | "YEARLY" | "SPLIT" | undefined;
 
 export type IntervalDates = {
   start: Date;
@@ -105,7 +91,6 @@ export type Backup = {
   data: BackupData[];
 };
 
-
 export interface BudgetMeta {
   id: string;
   name: string;
@@ -116,6 +101,8 @@ export interface BudgetMeta {
   envelopeCount?: number;
   billCount?: number;
   availableBudget?: number;
+  payPeriodInterval: Interval;
+  payDate: Timestamp;
 }
 
 // User's reference to a budget (users/{userId}/budgets/{budgetId})

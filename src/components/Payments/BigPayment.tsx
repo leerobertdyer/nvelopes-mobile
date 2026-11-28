@@ -8,15 +8,8 @@ import { Payment } from "../../types";
 import { useAuth } from "../../context/AuthContext/useAuth";
 import { useBudget } from "../../context/BudgetContext/useBudget";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
-import {
-  createTransactionId,
-  deriveIsPaid,
-  removeVirtualIdPortion,
-} from "../../util/util";
-import {
-  editDatabaseWithTransaction,
-  editPayments,
-} from "../../firebase/editData";
+import { createTransactionId, deriveIsPaid, removeVirtualIdPortion } from "../../util/util";
+import { editDatabaseWithTransaction, editPayments } from "../../firebase/editData";
 import PaymentForm from "../Forms/PaymentForm";
 import Btn from "../Buttons/Btn";
 import { Modal, View } from "react-native";
@@ -33,20 +26,12 @@ interface IProps {
   onPaymentUpdated?: (payment: Payment) => void;
 }
 
-export default function BigPayment({
-  handleBack,
-  paymentToEdit,
-  handleUpdatePaid,
-  handleDeleteBill,
-  onPaymentUpdated,
-}: IProps) {
+export default function BigPayment({ handleBack, paymentToEdit, handleUpdatePaid, handleDeleteBill, onPaymentUpdated }: IProps) {
   const [showForm, setShowForm] = useState(false);
   const [p, setP] = useState<Payment | null>(paymentToEdit);
   const [showExtraPaymentForm, setShowExtraPaymentForm] = useState(false);
   const [extraPaymentAmount, setExtraPaymentAmount] = useState(0);
-  const [extraPaymentError, setExtraPaymentError] = useState<string | null>(
-    null,
-  );
+  const [extraPaymentError, setExtraPaymentError] = useState<string | null>(null);
   const { user } = useAuth();
   const { activeBudgetId } = useBudget();
   const { payments, setPayments } = useDatabase();
@@ -70,9 +55,7 @@ export default function BigPayment({
     const newTotal = Math.max(0, currentTotal - amount);
     const originalId = removeVirtualIdPortion(p);
     const updatedPayment: Payment = { ...p, id: originalId, total: newTotal };
-    const updatedPayments = payments.map((pay) =>
-      removeVirtualIdPortion(pay) === originalId ? updatedPayment : pay,
-    );
+    const updatedPayments = payments.map((pay) => (removeVirtualIdPortion(pay) === originalId ? updatedPayment : pay));
     setPayments(updatedPayments);
     await editDatabaseWithTransaction({
       t: {
@@ -120,60 +103,30 @@ export default function BigPayment({
   }
 
   if (showForm && user)
-    return (
-      <PaymentForm
-        paymentToEdit={p}
-        user={user}
-        handleBack={handleBack}
-        onPaymentUpdated={handlePaymentUpdated}
-      />
-    );
+    return <PaymentForm paymentToEdit={p} user={user} handleBack={handleBack} onPaymentUpdated={handlePaymentUpdated} />;
   if (!p) return <MyText>Error: Missing Payment To Edit</MyText>;
   return (
     <View className="pt-[3rem] bg-my-white-light w-full">
       <View className="w-full items-center justify-start">
         <View className="justify-center items-start p-2 w-[17rem] text-my-black-light rounded-md mb-8">
-          <MyText className="text-lg text-my-black-dark mb-4 text-center w-full">
-            "{p.name}"
-          </MyText>
+          <MyText className="text-lg text-my-black-dark mb-4 text-center w-full">"{p.name}"</MyText>
           <View className="items-center w-[14rem] justify-between m-auto">
             <View className="w-full flex-row justify-between">
               <MyText>Type: </MyText>
-              <MyText
-                className={`${p.type === "BILL" ? "text-my-red-dark" : p.type === "FUND" ? "text-my-green-dark" : "text-my-blue-dark"}`}
-              >
-                {p.type}
-              </MyText>
+              <MyText className={`${p.type === "BILL" ? "text-my-red-dark" : "text-my-blue-dark"}`}>{p.type}</MyText>
             </View>
             <View className="w-full flex-row justify-between">
-              <MyText>{p.type === "FUND" ? "Per Period:" : "Amount:"} </MyText>
-              <MyText className="text-my-green-dark">
-                ${Number(p.amount).toFixed(2)}
-              </MyText>
+              <MyText>Amount: </MyText>
+              <MyText className="text-my-green-dark">${Number(p.amount).toFixed(2)}</MyText>
             </View>
             <View className="w-full flex-row justify-between">
-              <MyText>{p.type === "FUND" ? "Target Date:" : "Due:"} </MyText>
-              <MyText className="text-my-green-dark">
-                {format(
-                  p.dueDate.toDate(),
-                  p.type === "FUND" ? "MMM do, yyyy" : "do",
-                )}
-              </MyText>
+              <MyText>Due: </MyText>
+              <MyText className="text-my-green-dark">{format(p.dueDate.toDate(), "do")}</MyText>
             </View>
             {p.type === "DEBT" && (p.total ?? 0) > 0 && (
               <View className="w-full flex-row justify-between">
                 <MyText>Remaining Due: </MyText>
-                <MyText className="text-my-green-dark">
-                  ${Number(p.total).toFixed(2)}
-                </MyText>
-              </View>
-            )}
-            {p.type === "FUND" && (
-              <View className="w-full flex-row justify-between">
-                <MyText>Target Amount: </MyText>
-                <MyText className="text-my-green-dark">
-                  ${Number(p.total).toFixed(2)}
-                </MyText>
+                <MyText className="text-my-green-dark">${Number(p.total).toFixed(2)}</MyText>
               </View>
             )}
           </View>
@@ -181,11 +134,7 @@ export default function BigPayment({
         <View className="h-2" />
         <View className="justify-center items-center gap-2 w-full">
           {handleUpdatePaid && (
-            <Btn
-              color="green"
-              onPress={() => updatePaid()}
-              text={deriveIsPaid(p) ? 'Mark As "Not Paid"' : 'Mark As "Paid"'}
-            />
+            <Btn color="green" onPress={() => updatePaid()} text={deriveIsPaid(p) ? 'Mark As "Not Paid"' : 'Mark As "Paid"'} />
           )}
           <Btn
             color="gold"
@@ -218,41 +167,33 @@ export default function BigPayment({
         {showExtraPaymentForm && p?.type === "DEBT" && (p.total ?? 0) > 0 && (
           <Modal>
             <View className="w-full h-fit bg-my-blue-dark m-auto p-4">
-                <View className="items-center justify-center gap-2 w-full">
-                  <MyText className="text-2xl font-medium mb-1 text-my-white-light">
-                    Extra Payment
-                  </MyText>
-                  <MyText className="text-lg text-my-white-light mb-2">
-                    Remaining: ${(p.total ?? 0).toFixed(2)}
-                  </MyText>
-                  <Btn color="gold" onPress={handlePayAll} text="Pay All" />
-                  <MoneyInput
-                    id="extraPaymentAmount"
-                    label=""
-                    value={extraPaymentAmount}
-                    onChange={(d) => {
-                      setExtraPaymentAmount(d);
-                      setExtraPaymentError(null);
-                    }}
-                    placeholder="Amount"
-                  />
-                  <Btn text="Apply" color="green" onPress={handlePayExtra} />
-                  {extraPaymentError && (
-                    <MyText className="text-xs text-my-red-light mb-2">
-                      {extraPaymentError}
-                    </MyText>
-                  )}
-                  <Btn
-                    color="red"
-                    text="Cancel"
-                    onPress={() => {
-                      setShowExtraPaymentForm(false);
-                      setExtraPaymentAmount(0);
-                      setExtraPaymentError(null);
-                    }}
-                  />
-                </View>
+              <View className="items-center justify-center gap-2 w-full">
+                <MyText className="text-2xl font-medium mb-1 text-my-white-light">Extra Payment</MyText>
+                <MyText className="text-lg text-my-white-light mb-2">Remaining: ${(p.total ?? 0).toFixed(2)}</MyText>
+                <Btn color="gold" onPress={handlePayAll} text="Pay All" />
+                <MoneyInput
+                  id="extraPaymentAmount"
+                  label=""
+                  value={extraPaymentAmount}
+                  onChange={(d) => {
+                    setExtraPaymentAmount(d);
+                    setExtraPaymentError(null);
+                  }}
+                  placeholder="Amount"
+                />
+                <Btn text="Apply" color="green" onPress={handlePayExtra} />
+                {extraPaymentError && <MyText className="text-xs text-my-red-light mb-2">{extraPaymentError}</MyText>}
+                <Btn
+                  color="red"
+                  text="Cancel"
+                  onPress={() => {
+                    setShowExtraPaymentForm(false);
+                    setExtraPaymentAmount(0);
+                    setExtraPaymentError(null);
+                  }}
+                />
               </View>
+            </View>
           </Modal>
         )}
       </View>

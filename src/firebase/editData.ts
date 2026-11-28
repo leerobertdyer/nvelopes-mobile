@@ -279,6 +279,13 @@ export async function restoreFromSafeBackup(backupId: string, user: User, budget
     const backupSnap = await backupDocRef.get();
     if (!backupSnap.exists) return null;
     const b = backupSnap.data();
+    const d0 = b?.payments?.[0]?.dueDate;
+    console.log("[BACKUP RAW]", {
+      isTimestamp: d0 instanceof firestore.Timestamp,
+      hasToDate: typeof d0?.toDate === "function",
+      keys: d0 && typeof d0 === "object" ? Object.keys(d0) : null,
+      value: d0,
+    });
     if (!b) return;
     await editTotalSpendingBudget(Number(b.totalSpendingBudget), budgetId);
     await editEnvelopes(b.nvelopes ?? [], budgetId);
@@ -398,24 +405,34 @@ function toTimestamp(obj: unknown): Timestamp | null {
 /**
  * Restore from backup (undo last restore) into the given budget.
  */
-export async function restoreFromAsyncStorageBackup(user: User, budgetId: string): Promise<boolean> {
-  if (!user) return false;
+export async function restoreFromAsyncStorageBackup(
+  user: User,
+  budgetId: string,
+): Promise<{ payments: Payment[]; envelopes: Nvelope[]; totalSpendingBudget: number } | null> {
+  if (!user) return null;
   const backup = await getAsyncStorageBackup();
-  if (!backup) return false;
+  if (!backup) return null;
   try {
     const { data } = backup;
-    const restoredPayments = (data.payments ?? []).map((p: Payment & { dueDate?: unknown; paidDates?: unknown[] }) => ({
-      ...p,
-      dueDate: toTimestamp(p.dueDate) ?? firestore.Timestamp.now(),
-      paidDates: (p.paidDates ?? []).map((pd) => toTimestamp(pd)).filter((t): t is Timestamp => t !== null) ?? [],
-    }));
-    await editTotalSpendingBudget(Number(data.totalSpendingBudget), budgetId);
-    await editEnvelopes(data.envelopes ?? [], budgetId);
-    await editPayments(restoredPayments, budgetId);
-    clearAsyncStorageBackup();
-    return true;
+    const payments = (data.payments ?? []).flatMap((p: Payment & { dueDate?: unknown; paidDates?: unknown[] }) => {
+      const dueDate = toTimestamp(p.dueDate);
+      if (!dueDate) {
+        console.warn("Skipping payment with unreadable dueDate", p.id);
+        return [];
+      }
+      const paidDates = (p.paidDates ?? []).map(toTimestamp).filter((t): t is Timestamp => t !== null);
+      return [{ ...p, dueDate, paidDates }];
+    });
+    const envelopes = data.envelopes ?? [];
+    const totalSpendingBudget = Number(data.totalSpendingBudget);
+
+    await editTotalSpendingBudget(totalSpendingBudget, budgetId);
+    await editEnvelopes(envelopes, budgetId);
+    await editPayments(payments, budgetId);
+    await clearAsyncStorageBackup();
+    return { payments, envelopes, totalSpendingBudget };
   } catch (error) {
-    console.error("Error restoring from localStorage backup:", error);
-    return false;
+    console.error("Error restoring from AsyncStorage backup:", error);
+    return null;
   }
 }
